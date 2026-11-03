@@ -1,5 +1,6 @@
 import {test,expect} from '@playwright/test';
-test.beforeEach(async({page})=>{await page.goto('/');await expect(page.getByRole('heading',{name:'Sua equipe, no ritmo certo.'})).toBeVisible();});
+import {testEmail,testPassword} from '../auth-fixture';
+test.beforeEach(async({page})=>{const response=await page.request.post('/api/auth/login',{headers:{origin:'http://127.0.0.1:3105'},data:{email:testEmail,password:testPassword}});expect(response.status()).toBe(200);await page.goto('/');await expect(page.getByRole('heading',{name:'Sua equipe, no ritmo certo.'})).toBeVisible();});
 test('renders the schedule, filters teams and changes the week',async({page})=>{
  await expect(page.locator('tbody tr')).toHaveCount(8);
  await page.getByLabel('Filtrar equipe').selectOption('Campo');
@@ -16,7 +17,7 @@ test('blocks an invalid shift and saves a valid edit across reload',async({page}
  const dialog=page.getByRole('dialog');
  await dialog.getByLabel('Saída',{exact:true}).fill('18:00');
  await dialog.getByRole('button',{name:'Validar e salvar'}).click();
- await expect(dialog.getByRole('alert')).toContainText('excede o limite diário');
+ await expect(dialog.locator('.form-errors[role=alert]')).toContainText('excede o limite diário');
  await expect(dialog).toBeVisible();
  await dialog.getByLabel('Saída',{exact:true}).fill('16:00');
  await dialog.getByRole('button',{name:'Validar e salvar'}).click();
@@ -73,9 +74,9 @@ test('mobile navigation works without page overflow',async({page})=>{
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.screenshot({path:'/tmp/escala-mobile.png',fullPage:true});
 });
-test('desktop layout and API error contract',async({page,request})=>{
+test('desktop layout and API error contract',async({page})=>{
  await page.setViewportSize({width:1440,height:1100});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
- const response=await request.post('/api/validate',{data:{shifts:[],employees:[],rules:{}}});expect(response.status()).toBe(400);
+ const response=await page.request.post('/api/validate',{data:{shifts:[],employees:[],rules:{}}});expect(response.status()).toBe(400);
  await page.screenshot({path:'/tmp/escala-desktop.png',fullPage:true});
 });

@@ -9,10 +9,11 @@ Requer Node.js 22 ou 24 e npm. Use o checkout existente em `/workspace/escala`; 
 ```bash
 cd /workspace/escala
 npm ci
+npm run auth:setup
 npm run dev
 ```
 
-O servidor usa a porta 3000. Dados fictícios são criados na primeira abertura, com datas relativas à semana atual em Brasília. Não é necessário `.env`.
+O servidor usa a porta 3000. Dados fictícios são criados na primeira abertura, com datas relativas à semana atual em Brasília. Defina o acesso de administrador com `npm run auth:setup`; o comando cria `.env.local`, ignorado pelo Git. Sem configuração, o sistema mostra a tela de login com acesso indisponível e mantém painel/API bloqueados.
 
 ```bash
 npm test
@@ -35,7 +36,7 @@ npm start
 
 ## Limites do MVP
 
-O armazenamento é **local ao navegador**, sem autenticação, compartilhamento ou banco conectado. Não use dados pessoais reais em um dispositivo compartilhado. A API é um validador sem persistência; o cliente envia o planejamento inteiro. Não constitui uma barreira de segurança para um produto multiusuário.
+O armazenamento é **local ao navegador**, com login de administrador único, sem compartilhamento ou banco conectado. Não use dados pessoais reais em um dispositivo compartilhado. A API é um validador sem persistência; o cliente envia o planejamento inteiro. O login protege as rotas, mas não criptografa nem remove o localStorage no logout. Os dados locais continuam no dispositivo e não há isolamento entre contas. Não constitui uma solução multiusuário.
 
 O perfil 5x2/6x1 é uma identificação, não um gerador de escalas nem uma prova de cumprimento de todas as folgas desse regime. Os bloqueios usam os parâmetros configurados, sem interpretação automática da legislação ou CCT. A validação só conhece os turnos fornecidos; não certifica DSR em períodos incompletos. O descanso semanal combinado é verificado em folgas civis completas delimitadas por turnos conhecidos. Intervalos de refeições são descontados em minutos; não há posição exata da pausa. Horas de turnos que atravessam meia-noite são atribuídas à data de entrada para totais diário e semanal. Os dias alcançados pelo turno contam para a sequência de dias trabalhados. Horários usam o fuso fixo UTC−03:00, adequado a Brasília nas datas atuais, sem histórico de horário de verão.
 
@@ -66,3 +67,23 @@ Os testes de navegador usam Chromium em `/usr/bin/chromium` quando disponível. 
 ## Design
 
 A interface segue a referência visual Pastel enviada pelo usuário: fundo Paper Stone, tipografia Figtree local, um acento cobalto, superfícies planas e navegação superior responsiva. Consulte [as decisões de adaptação](docs/design.md) e [a referência original](docs/design-reference.md).
+
+## Login de administrador
+
+A página `/login` é a entrada do sistema. Acesso à raiz e à API de validação exige uma sessão válida no servidor. O usuário configura o próprio e-mail e senha; não existe senha padrão nem cadastro público.
+
+Execute `npm run auth:setup` em terminal interativo. O comando solicita o e-mail, uma senha de 12 a 256 caracteres (sem eco no terminal) e sua confirmação. Gera hash scrypt com salt e um segredo aleatório, preserva outras variáveis de `.env.local` e pede confirmação antes de substituir um acesso existente. A senha original não é salva. Reinicie o servidor após configurar.
+
+As variáveis privadas de servidor são:
+
+- `ESCALA_ADMIN_EMAIL`: e-mail autorizado.
+- `ESCALA_ADMIN_PASSWORD_HASH`: hash no formato `scrypt$salt$hash` gerado pelo setup.
+- `ESCALA_SESSION_SECRET`: segredo aleatório com pelo menos 32 caracteres.
+
+Para hospedagem, registre esses valores nas configurações privadas do serviço e faça novo deploy. Em arquivos `.env`, o Next.js expande `$`; o setup já grava os sinais como `\$`. No painel da hospedagem use o hash original com `$`, sem barras de escape ou aspas. Nunca use prefixo `NEXT_PUBLIC_`, versione `.env.local` ou envie credenciais pelo chat.
+
+Sessão assinada de oito horas em cookie HttpOnly, SameSite=Lax e Secure em domínios públicos; HTTP é permitido apenas em loopback para desenvolvimento/testes. Login e logout verificam a origem da requisição. Há limite de 20 tentativas por 15 minutos por instância do servidor. A limitação não é distribuída: implantações com múltiplas instâncias devem usar um provedor de autenticação/limiter compartilhado antes de ampliar o acesso.
+
+O logout remove o cookie deste navegador. Sessões são sem estado: uma cópia de um token permanece válida até expirar ou até trocar a senha/e-mail/segredo. A troca de qualquer configuração invalida as sessões anteriores. Não há recuperação por e-mail, MFA, perfis por colaborador ou revogação individual; para a operação multiempresa, a evolução indicada continua sendo Supabase Auth e persistência com RLS.
+
+Os testes usam exclusivamente uma identidade fictícia declarada em `tests/auth-fixture.ts`, injetada apenas no servidor isolado do Playwright (porta 3105). Esses valores não são padrões da aplicação e não devem ser usados em produção.

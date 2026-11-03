@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { authenticated } from '@/lib/auth';
 import { validate } from '@/lib/validation';
 import type { Employee, Rules, Shift } from '@/lib/types';
 function validDate(value: unknown): value is string { return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(value+'T12:00Z').toISOString().slice(0,10)===value; }
 export async function POST(request: Request) {
+ if (!authenticated(request)) return NextResponse.json({error: 'Sua sessão expirou. Entre novamente.'}, {status:401, headers:{'Cache-Control':'no-store'}});
  try {
   const data=await request.json();
   if (!data || !Array.isArray(data.shifts) || !Array.isArray(data.employees) || data.shifts.length>10000 || data.employees.length>1000 || !data.rules) throw new Error('invalid');

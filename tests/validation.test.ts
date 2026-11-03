@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { authenticatedRequest, configureTestAuth } from './auth-fixture';
+configureTestAuth();
 import assert from 'node:assert/strict';
 import { defaultRules, interval, validate } from '../lib/validation';
 import { createSeed } from '../lib/seed';
@@ -23,5 +25,7 @@ test('blocks a calendar day off with less than 35h combined rest',()=>assert.ok(
 test('enforces the employee Sunday rotation',()=>assert.ok(codes([shift('2026-11-01','08:00','12:00',0),shift('2026-11-08','08:00','12:00',0)]).includes('sunday')));
 test('does not mix different employees when validating rest',()=>{const other={...employee,id:'b'};const shifts=[shift('2026-11-02','13:00','22:00'),{...shift('2026-11-03'),employeeId:'b'}];assert.deepEqual(validate(shifts,[employee,other],defaultRules),[]);});
 test('rejects invalid or negative duration after breaks',()=>assert.ok(codes([shift('2026-11-02','08:00','09:00',90)]).includes('invalid')));
-test('API validates a valid schedule and rejects a conflicting one',async()=>{const request=(shifts:Shift[])=>new Request('http://localhost/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shifts,employees:[employee],rules:defaultRules})});let response=await POST(request([shift('2026-11-02')]));assert.equal(response.status,200);assert.equal((await response.json()).valid,true);response=await POST(request([shift('2026-11-02','08:00','18:00')]));assert.equal((await response.json()).valid,false);});
-test('API rejects invalid dates, unknown employees and unsafe rule values',async()=>{for(const override of [{shifts:[shift('2026-02-30')]},{shifts:[{...shift('2026-11-02'),employeeId:'missing'}]},{rules:{...defaultRules,intershiftHours:0}},{rules:{dailyHours:8}}]){const response=await POST(new Request('http://localhost/api/validate',{method:'POST',body:JSON.stringify({shifts:[shift('2026-11-02')],employees:[employee],rules:defaultRules,...override})}));assert.equal(response.status,400);}});
+test('API validates a valid schedule and rejects a conflicting one',async()=>{const request=(shifts:Shift[])=>authenticatedRequest('http://localhost/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shifts,employees:[employee],rules:defaultRules})});let response=await POST(request([shift('2026-11-02')]));assert.equal(response.status,200);assert.equal((await response.json()).valid,true);response=await POST(request([shift('2026-11-02','08:00','18:00')]));assert.equal((await response.json()).valid,false);});
+test('API rejects invalid dates, unknown employees and unsafe rule values',async()=>{for(const override of [{shifts:[shift('2026-02-30')]},{shifts:[{...shift('2026-11-02'),employeeId:'missing'}]},{rules:{...defaultRules,intershiftHours:0}},{rules:{dailyHours:8}}]){const response=await POST(authenticatedRequest('http://localhost/api/validate',{method:'POST',body:JSON.stringify({shifts:[shift('2026-11-02')],employees:[employee],rules:defaultRules,...override})}));assert.equal(response.status,400);}});
+
+test('validation API denies anonymous calls',async()=>{const response=await POST(new Request('http://localhost/api/validate',{method:'POST',body:'{}'}));assert.equal(response.status,401);});
