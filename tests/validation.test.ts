@@ -1,0 +1,27 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { defaultRules, interval, validate } from '../lib/validation';
+import { createSeed } from '../lib/seed';
+import { addDays } from '../lib/dates';
+import { POST } from '../app/api/validate/route';
+import type { Employee, Shift } from '../lib/types';
+const employee: Employee={id:'a',name:'Ana',role:'Técnica',team:'Campo',regime:'5x2',color:'purple',sundayEvery:2};
+function shift(date:string,start='08:00',end='17:00',breakMinutes=60,id=date):Shift{return {id,employeeId:'a',date,start,end,breakMinutes};}
+const codes=(shifts:Shift[])=>validate(shifts,[employee],defaultRules).filter(i=>i.severity==='error').map(i=>i.code);
+test('seed schedule has no blocking conflicts',()=>{const s=createSeed();assert.deepEqual(validate(s.shifts,s.employees,s.rules).filter(i=>i.severity==='error'),[]);});
+test('computes overnight paid duration and deducts the break',()=>assert.equal(interval(shift('2026-11-02','22:00','07:00')).hours,8));
+test('blocks less than 11h between shifts across midnight',()=>assert.ok(codes([shift('2026-11-02','13:00','22:00'),shift('2026-11-03')]).includes('intershift')));
+test('allows exactly 11h of rest',()=>assert.ok(!codes([shift('2026-11-02','13:00','22:00'),shift('2026-11-03','09:00','18:00')]).includes('intershift')));
+test('blocks overlapping overnight shifts',()=>assert.ok(codes([shift('2026-11-02','22:00','07:00'),shift('2026-11-03','06:00','15:00')]).includes('overlap')));
+test('blocks >8 working hours per day',()=>assert.ok(codes([shift('2026-11-02','08:00','18:00')]).includes('daily')));
+test('aggregates split shifts on the same date',()=>assert.ok(codes([shift('2026-11-02','00:00','05:00',15,'a'),shift('2026-11-02','16:00','21:00',15,'b')]).includes('daily')));
+test('validates meal breaks at exact thresholds',()=>{assert.ok(!codes([shift('2026-11-02','08:00','12:00',0)]).includes('break'));assert.ok(codes([shift('2026-11-02','08:00','14:00',0)]).includes('break'));assert.ok(!codes([shift('2026-11-02','08:00','14:15',15)]).includes('break'));assert.ok(codes([shift('2026-11-02','08:00','16:00',30)]).includes('break'));});
+test('blocks weekly limit of 44h',()=>assert.ok(codes(Array.from({length:6},(_,i)=>shift(addDays('2026-11-02',i)))).includes('weekly')));
+test('blocks the seventh consecutive day even across a week boundary',()=>assert.ok(codes(Array.from({length:7},(_,i)=>shift(addDays('2026-11-05',i),'08:00','12:00',0))).includes('consecutive')));
+test('a day off resets the consecutive streak',()=>assert.ok(!codes([0,1,2,3,4,5,7].map(i=>shift(addDays('2026-11-02',i),'08:00','12:00',0))).includes('consecutive')));
+test('blocks a calendar day off with less than 35h combined rest',()=>assert.ok(codes([shift('2026-11-02','18:00','23:00',15),shift('2026-11-04','08:00','12:00',0)]).includes('weekly-rest')));
+test('enforces the employee Sunday rotation',()=>assert.ok(codes([shift('2026-11-01','08:00','12:00',0),shift('2026-11-08','08:00','12:00',0)]).includes('sunday')));
+test('does not mix different employees when validating rest',()=>{const other={...employee,id:'b'};const shifts=[shift('2026-11-02','13:00','22:00'),{...shift('2026-11-03'),employeeId:'b'}];assert.deepEqual(validate(shifts,[employee,other],defaultRules),[]);});
+test('rejects invalid or negative duration after breaks',()=>assert.ok(codes([shift('2026-11-02','08:00','09:00',90)]).includes('invalid')));
+test('API validates a valid schedule and rejects a conflicting one',async()=>{const request=(shifts:Shift[])=>new Request('http://localhost/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({shifts,employees:[employee],rules:defaultRules})});let response=await POST(request([shift('2026-11-02')]));assert.equal(response.status,200);assert.equal((await response.json()).valid,true);response=await POST(request([shift('2026-11-02','08:00','18:00')]));assert.equal((await response.json()).valid,false);});
+test('API rejects invalid dates, unknown employees and unsafe rule values',async()=>{for(const override of [{shifts:[shift('2026-02-30')]},{shifts:[{...shift('2026-11-02'),employeeId:'missing'}]},{rules:{...defaultRules,intershiftHours:0}},{rules:{dailyHours:8}}]){const response=await POST(new Request('http://localhost/api/validate',{method:'POST',body:JSON.stringify({shifts:[shift('2026-11-02')],employees:[employee],rules:defaultRules,...override})}));assert.equal(response.status,400);}});

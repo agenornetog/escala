@@ -1,0 +1,81 @@
+import {test,expect} from '@playwright/test';
+test.beforeEach(async({page})=>{await page.goto('/');await expect(page.getByRole('heading',{name:'Sua equipe, no ritmo certo.'})).toBeVisible();});
+test('renders the schedule, filters teams and changes the week',async({page})=>{
+ await expect(page.locator('tbody tr')).toHaveCount(8);
+ await page.getByLabel('Filtrar equipe').selectOption('Campo');
+ await expect(page.locator('tbody tr')).toHaveCount(3);
+ await page.getByLabel('Próxima semana',{exact:true}).click();
+ await expect(page.locator('.shift')).toHaveCount(0);
+ await page.getByRole('button',{name:'Hoje',exact:true}).click();
+ await expect(page.locator('.shift').first()).toBeVisible();
+ await page.getByRole('button',{name:'Mês',exact:true}).click();
+ await expect(page.locator('thead th')).toHaveCount(29);
+});
+test('blocks an invalid shift and saves a valid edit across reload',async({page})=>{
+ await page.locator('.shift').first().click();
+ const dialog=page.getByRole('dialog');
+ await dialog.getByLabel('Saída',{exact:true}).fill('18:00');
+ await dialog.getByRole('button',{name:'Validar e salvar'}).click();
+ await expect(dialog.getByRole('alert')).toContainText('excede o limite diário');
+ await expect(dialog).toBeVisible();
+ await dialog.getByLabel('Saída',{exact:true}).fill('16:00');
+ await dialog.getByRole('button',{name:'Validar e salvar'}).click();
+ await expect(dialog).toHaveCount(0);
+ await expect(page.locator('.shift').first()).toContainText('16:00');
+ await page.reload();
+ await expect(page.locator('.shift').first()).toContainText('16:00');
+});
+test('creates an employee and a shift, then deletes the shift',async({page})=>{
+ await page.getByRole('button',{name:'Colaboradores',exact:true}).click();
+ await page.getByRole('button',{name:'Novo colaborador'}).click();
+ await page.getByLabel('Nome completo').fill('Marina Teste');await page.getByLabel('Cargo',{exact:true}).fill('Técnica');
+ await page.getByRole('button',{name:'Adicionar colaborador'}).click();
+ await expect(page.getByRole('heading',{name:'Marina Teste'})).toBeVisible();
+ await page.getByRole('button',{name:'Escalas',exact:true}).click();
+ const row=page.locator('tbody tr').filter({hasText:'Marina Teste'});
+ await row.locator('.day-off').first().click();
+ await page.getByRole('button',{name:'Validar e salvar'}).click();
+ await expect(row.locator('.shift')).toHaveCount(1);
+ await row.locator('.shift').click();
+ await page.getByRole('button',{name:'Excluir turno'}).click();
+ await expect(row.locator('.shift')).toHaveCount(0);
+});
+test('exports CSV, copies a week and prevents overwriting populated weeks',async({page})=>{
+ const download=page.waitForEvent('download');await page.getByRole('button',{name:'Exportar',exact:true}).click();expect((await download).suggestedFilename()).toMatch(/^escala-.*\.csv$/);
+ const original=await page.locator('.shift').count();
+ await page.getByRole('button',{name:'Copiar semana'}).click();
+ await expect(page.getByRole('status')).toContainText('Semana copiada');
+ await expect(page.locator('.shift')).toHaveCount(original);
+ await page.getByLabel('Semana anterior',{exact:true}).click();
+ await page.getByRole('button',{name:'Copiar semana'}).click();
+ await expect(page.getByRole('status')).toContainText('já tem turnos');
+});
+test('creates and approves a validated shift swap',async({page})=>{
+ await page.getByRole('button',{name:'Trocas de turno',exact:true}).click();
+ await page.getByRole('button',{name:'Solicitar troca',exact:true}).click();
+ const dialog=page.getByRole('dialog');
+ const from=await dialog.locator('select[name=from] option').allTextContents();
+ const to=await dialog.locator('select[name=to] option').allTextContents();
+ await dialog.locator('select[name=from]').selectOption({label:from.find(t=>t.startsWith('Ana Costa'))!});
+ await dialog.locator('select[name=to]').selectOption({label:to.find(t=>t.startsWith('Camila Santos'))!});
+ await dialog.getByRole('button',{name:'Solicitar troca',exact:true}).click();
+ await expect(page.locator('.status')).toHaveText('Pendente');
+ await page.getByRole('button',{name:'Aprovar',exact:true}).click();
+ await expect(page.locator('.status')).toHaveText('Aprovada');
+ await page.reload();await page.getByRole('button',{name:'Trocas de turno',exact:true}).click();
+ await expect(page.locator('.status')).toHaveText('Aprovada');
+});
+test('mobile navigation works without page overflow',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:'Abrir menu'}).click();
+ await page.getByRole('button',{name:'Regras e limites',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Perfil de jornada'})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.screenshot({path:'/tmp/escala-mobile.png',fullPage:true});
+});
+test('desktop layout and API error contract',async({page,request})=>{
+ await page.setViewportSize({width:1440,height:1100});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ const response=await request.post('/api/validate',{data:{shifts:[],employees:[],rules:{}}});expect(response.status()).toBe(400);
+ await page.screenshot({path:'/tmp/escala-desktop.png',fullPage:true});
+});
