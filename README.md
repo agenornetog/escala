@@ -62,3 +62,7 @@ Antes de conectar produção:
 - `supabase/schema.sql`: base futura de persistência, ainda não conectada.
 
 Os testes de navegador usam Chromium em `/usr/bin/chromium` quando disponível. Em outra máquina, instale o navegador com `npx playwright install chromium` ou defina `PLAYWRIGHT_CHROMIUM_PATH`. O Playwright inicia a versão de produção automaticamente; execute o build antes. O servidor precisa poder abrir uma porta local. Neste executor, comandos de rede/processos podem exigir execução com permissão ampliada.
+
+## Design
+
+A interface segue a referência visual Pastel enviada pelo usuário: fundo Paper Stone, tipografia Figtree local, um acento cobalto, superfícies planas e navegação superior responsiva. Consulte [as decisões de adaptação](docs/design.md) e [a referência original](docs/design-reference.md).
