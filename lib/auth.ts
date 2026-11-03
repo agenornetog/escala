@@ -6,9 +6,11 @@ export const SESSION_SECONDS = 8 * 60 * 60;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function configuration() {
   const email = process.env.ESCALA_ADMIN_EMAIL?.trim().toLowerCase();
-  const hash = process.env.ESCALA_ADMIN_PASSWORD_HASH;
+  const storedHash = process.env.ESCALA_ADMIN_PASSWORD_HASH;
+  const password = process.env.ESCALA_ADMIN_PASSWORD;
+  const hash = storedHash || (password && password.length >= 12 && password.length <= 256 ? `env$${createHash('sha256').update(password).digest('hex')}` : undefined);
   const secret = process.env.ESCALA_SESSION_SECRET;
-  if (!email || !EMAIL.test(email) || !hash || !/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(hash) || !secret || secret.length < 32) return null;
+  if (!email || !EMAIL.test(email) || !hash || !(/^(scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}|env\$[a-f0-9]{64})$/.test(hash)) || !secret || secret.length < 32) return null;
   return { email, hash, secret };
 }
 export function authConfigured() { return configuration() !== null; }
@@ -20,6 +22,11 @@ export async function hashPassword(password: string) {
 export async function verifyCredentials(email: string, password: string) {
   const config = configuration();
   if (!config || password.length > 256) return false;
+  if (config.hash.startsWith('env$')) {
+    const expected = Buffer.from(config.hash.slice(4), 'hex');
+    const actual = createHash('sha256').update(password).digest();
+    return timingSafeEqual(actual, expected) && email.trim().toLowerCase() === config.email;
+  }
   const [, salt, expected] = config.hash.split('$');
   const key = await scrypt(password, salt, 64) as Buffer;
   return timingSafeEqual(key, Buffer.from(expected, 'hex')) && email.trim().toLowerCase() === config.email;

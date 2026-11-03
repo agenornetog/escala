@@ -38,7 +38,7 @@ npm start
 
 O armazenamento é **local ao navegador**, com login de administrador único, sem compartilhamento ou banco conectado. Não use dados pessoais reais em um dispositivo compartilhado. A API é um validador sem persistência; o cliente envia o planejamento inteiro. O login protege as rotas, mas não criptografa nem remove o localStorage no logout. Os dados locais continuam no dispositivo e não há isolamento entre contas. Não constitui uma solução multiusuário.
 
-O perfil 5x2/6x1 é uma identificação, não um gerador de escalas nem uma prova de cumprimento de todas as folgas desse regime. Os bloqueios usam os parâmetros configurados, sem interpretação automática da legislação ou CCT. A validação só conhece os turnos fornecidos; não certifica DSR em períodos incompletos. O descanso semanal combinado é verificado em folgas civis completas delimitadas por turnos conhecidos. Intervalos de refeições são descontados em minutos; não há posição exata da pausa. Horas de turnos que atravessam meia-noite são atribuídas à data de entrada para totais diário e semanal. Os dias alcançados pelo turno contam para a sequência de dias trabalhados. Horários usam o fuso fixo UTC−03:00, adequado a Brasília nas datas atuais, sem histórico de horário de verão.
+Os perfis 5x2 e 6x1 limitam a sequência a cinco ou seis períodos de trabalho sem descanso semanal completo, respectivamente. Não são geradores nem prova de cumprimento de todas as folgas do regime, particularmente das duas folgas do 5x2. Os bloqueios usam os parâmetros configurados, sem interpretação automática da legislação ou CCT. A validação só conhece os turnos fornecidos; não certifica DSR em períodos incompletos. O descanso semanal combinado é verificado entre períodos conhecidos ao atingir o máximo de períodos sem descanso completo; histórico incompleto continua sendo uma limitação explícita. Intervalos de refeições são descontados em minutos; não há posição exata da pausa. Horas de turnos que atravessam meia-noite são atribuídas à data de entrada para totais diário e semanal. Um turno noturno conta como um período na sequência, enquanto todos os dias alcançados entram na análise dos domingos. Horários usam o fuso fixo UTC−03:00, adequado a Brasília nas datas atuais, sem histórico de horário de verão.
 
 Não cobre 12x36, feriados, banco de horas, adicionais, hora noturna reduzida, horas extras autorizadas, múltiplos vínculos ou integração de ponto. Valores sugeridos devem ser revisados pelo responsável trabalhista conforme categoria e CCT. A cobertura é uma contagem diária de pessoas, sem checagem por faixa horária ou cargo. O modo de 28 dias é uma janela iniciada na semana selecionada, não um mês civil. WhatsApp e notificações externas não estão conectados.
 
@@ -86,4 +86,24 @@ Sessão assinada de oito horas em cookie HttpOnly, SameSite=Lax e Secure em dom�
 
 O logout remove o cookie deste navegador. Sessões são sem estado: uma cópia de um token permanece válida até expirar ou até trocar a senha/e-mail/segredo. A troca de qualquer configuração invalida as sessões anteriores. Não há recuperação por e-mail, MFA, perfis por colaborador ou revogação individual; para a operação multiempresa, a evolução indicada continua sendo Supabase Auth e persistência com RLS.
 
-Os testes usam exclusivamente uma identidade fictícia declarada em `tests/auth-fixture.ts`, injetada apenas no servidor isolado do Playwright (porta 3105). Esses valores não são padrões da aplicação e não devem ser usados em produção.
+Os testes usam exclusivamente uma identidade fictícia declarada em `tests/auth-fixture.ts`, injetada apenas no servidor autenticado isolado do Playwright (porta 3105). Um segundo servidor na porta 3106 valida a instalação ainda sem credenciais. Esses valores não são padrões da aplicação e não devem ser usados em produção.
+
+### Liberação rápida na Vercel
+
+Em **Project → Settings → Environment Variables**, no projeto que atende `escala-bice.vercel.app`, defina para o ambiente **Production**:
+
+1. `ESCALA_ADMIN_EMAIL`: o e-mail que você usará para entrar.
+2. `ESCALA_ADMIN_PASSWORD`: uma senha privada de 12 a 256 caracteres escolhida por você. É uma alternativa ao hash para facilitar a configuração na hospedagem; não preencha `ESCALA_ADMIN_PASSWORD_HASH` com texto de exemplo. Se já houver um hash, ele tem prioridade.
+3. `ESCALA_SESSION_SECRET`: um segredo aleatório com pelo menos 32 caracteres. Pode ser gerado localmente com `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
+
+Salve e faça **Redeploy** em **Deployments**. Variáveis novas não alteram um deploy já em execução. O acesso só será validado na hospedagem depois dessa configuração; preencher o formulário, por si só, não cria uma conta. Nunca habilite as credenciais fictícias dos testes em um site público.
+
+Os campos de e-mail e senha permanecem editáveis mesmo sem configuração; o servidor mantém o bloqueio e explica que a instalação ainda precisa ser liberada. A alternativa com senha direta fica exclusivamente no ambiente privado do servidor, sem expor a senha no HTML, no JavaScript do navegador ou no Git.
+
+## Jornada individual e auditoria trabalhista
+
+Em **Colaboradores → Editar jornada**, marque **Usar jornada individual para este colaborador** e defina limites de horas, descansos, dias consecutivos e intervalo. Sem a marcação, valem os padrões gerais. As regras são verificadas na API antes de salvar; reduzir um limite abaixo do planejamento existente mostra conflitos, em vez de aprovar silenciosamente.
+
+Os perfis comuns aceitam até 10h/dia e 44h/semana. Jornada acima de 8h/dia ou redução do intervalo padrão exige referência do acordo aplicável. Essa referência não valida sua legalidade. 12x36, banco de horas, jornada noturna remunerada, feriados e condições especiais ainda precisam de implementação própria.
+
+A revisão técnica e suas fontes pendentes estão em [Auditoria CLT](docs/auditoria-clt.md). A API distingue aprovação pelas regras cadastradas de certificação jurídica (`compliance.certified: false`). Não declare conformidade integral com a CLT com base neste MVP.

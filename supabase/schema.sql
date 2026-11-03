@@ -29,17 +29,20 @@ create table public.employees (
  name text not null, role text not null,
  team text not null check (team in ('Campo','Suporte','Atendimento')),
  regime text not null check (regime in ('5x2','6x1')),
- sunday_every smallint not null default 3 check (sunday_every between 2 and 5),
+ rule_overrides jsonb not null default '{}' check (jsonb_typeof(rule_overrides) = 'object'),
+ agreement_reference text check (length(agreement_reference) <= 500),
+ sunday_every smallint not null default 3 check (sunday_every between 2 and 3),
  unique(organization_id,id)
 );
 create table public.schedule_rules (
  organization_id uuid primary key references public.organizations on delete cascade,
- daily_hours numeric not null default 8 check (daily_hours between 1 and 12),
- weekly_hours numeric not null default 44 check (weekly_hours between 1 and 60),
+ daily_hours numeric not null default 8 check (daily_hours between 1 and 10),
+ weekly_hours numeric not null default 44 check (weekly_hours between 1 and 44),
  intershift_hours numeric not null default 11 check (intershift_hours between 11 and 48),
  weekly_rest_hours numeric not null default 35 check (weekly_rest_hours between 35 and 72),
  max_consecutive_days smallint not null default 6 check (max_consecutive_days between 1 and 6),
  long_break_minutes smallint not null default 60 check (long_break_minutes between 30 and 120),
+ agreement_reference text check (length(agreement_reference) <= 500),
  coverage smallint not null default 4 check (coverage between 1 and 100)
 );
 create table public.shifts (

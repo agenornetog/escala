@@ -80,3 +80,35 @@ test('desktop layout and API error contract',async({page})=>{
  const response=await page.request.post('/api/validate',{data:{shifts:[],employees:[],rules:{}}});expect(response.status()).toBe(400);
  await page.screenshot({path:'/tmp/escala-desktop.png',fullPage:true});
 });
+
+test('individual workload can be edited and persists without changing other employees',async({page})=>{
+ await page.getByRole('button',{name:'Colaboradores',exact:true}).click();
+ await page.getByRole('button',{name:'Editar jornada de Ana Costa',exact:true}).click();
+ const dialog=page.getByRole('dialog');
+ await dialog.getByRole('checkbox',{name:'Usar jornada individual para este colaborador'}).check();
+ await dialog.getByLabel('Limite semanal (horas)',{exact:true}).fill('36');
+ await dialog.getByRole('button',{name:'Salvar jornada',exact:true}).click();
+ await expect(dialog.locator('.form-errors')).toContainText('Limite do perfil: 36h');
+ await dialog.getByLabel('Limite semanal (horas)',{exact:true}).fill('40');
+ await dialog.getByRole('button',{name:'Salvar jornada',exact:true}).click();
+ await expect(dialog).toHaveCount(0);
+ await expect(page.locator('.person-card').filter({hasText:'Ana Costa'})).toContainText('40h/semana · Individual');
+ await expect(page.locator('.person-card').filter({hasText:'Bruno Almeida'})).toContainText('44h/semana · Padrão');
+ await page.reload();await page.getByRole('button',{name:'Colaboradores',exact:true}).click();
+ await expect(page.locator('.person-card').filter({hasText:'Ana Costa'})).toContainText('40h/semana · Individual');
+});
+test('new individual workload blocks an eight-hour shift and accepts six hours',async({page})=>{
+ await page.getByRole('button',{name:'Colaboradores',exact:true}).click();
+ await page.getByRole('button',{name:'Novo colaborador'}).click();
+ const dialog=page.getByRole('dialog');
+ await dialog.getByLabel('Nome completo').fill('Joana Individual');await dialog.getByLabel('Cargo',{exact:true}).fill('Atendente');
+ await dialog.getByRole('checkbox',{name:'Usar jornada individual para este colaborador'}).check();
+ await dialog.getByLabel('Limite diário (horas)',{exact:true}).fill('6');await dialog.getByLabel('Limite semanal (horas)',{exact:true}).fill('30');
+ await dialog.getByRole('button',{name:'Adicionar colaborador'}).click();
+ await expect(dialog).toHaveCount(0);
+ await page.getByRole('button',{name:'Escalas',exact:true}).click();
+ const row=page.locator('tbody tr').filter({hasText:'Joana Individual'});await row.locator('.day-off').first().click();
+ await page.getByRole('button',{name:'Validar e salvar'}).click();await expect(page.locator('.form-errors')).toContainText('limite diário de 6h');
+ await page.getByLabel('Saída',{exact:true}).fill('14:15');await page.getByLabel('Intervalo (minutos)',{exact:true}).fill('15');
+ await page.getByRole('button',{name:'Validar e salvar'}).click();await expect(row.locator('.shift')).toHaveCount(1);
+});

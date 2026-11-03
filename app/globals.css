@@ -500,3 +500,14 @@ tfoot .employee-col > small { display: block; font-size: 10px; color: var(--fog)
  .login-form input { font-size: 16px; }
  .login-footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; gap: 10px; font-size: 11px; }
 }
+
+.individual-toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; margin: 24px 0 20px; line-height: 1.6; }
+.individual-toggle input { accent-color: var(--accent); width: 18px; height: 18px; flex-shrink: 0; }
+.individual-fields { padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); }
+form:not(:has(.individual-toggle input:checked)) .individual-fields { display: none; }
+.agreement-field { display: flex; flex-direction: column; gap: 9px; font-size: 14px; margin-top: 24px; }
+.agreement-field input { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; width: 100%; }
+.agreement-field small { color: var(--fog); font-size: 12px; line-height: 1.7; }
+.person-card .employee-contract { font-size: 12px; line-height: 1.7; }
+.person-bottom { flex-wrap: wrap; }
+@media (max-width: 720px) { .individual-fields { padding: 14px; grid-template-columns: 1fr; } }
