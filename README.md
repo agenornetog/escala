@@ -134,3 +134,19 @@ Para confirmar uma folga, clique em um dia sem turno e use **Marcar folga nesta 
 Dados antigos sem registros de folga continuam válidos, mas os vazios passam a ser identificados como **sem planejamento**. Não há migração que invente folgas. A equipe fictícia de primeira abertura já contém folgas explícitas apenas na semana de demonstração. A ausência de trabalho em outras semanas não cria folgas automaticamente.
 
 A exportação não calcula horas de disponibilidade extra, banco de horas ou remuneração e não certifica conformidade com a CLT. O PDF registra a data de emissão em Brasília e o período/filtro escolhido. Fontes Figtree são incorporadas e carregadas localmente de `public/fonts`, sem Google Fonts. Os arquivos TTF são conversões sem alteração de desenho das fontes Latin 400 e 600 do pacote `@fontsource/figtree` 5.3.0; a licença OFL está em `public/fonts/OFL.txt`. Esses arquivos já estão no repositório, portanto não há etapa de conversão no build.
+
+## Cadastro de feriados
+
+Acesse **Workspace → Feriados → Novo feriado**. Informe nome, data e abrangência:
+
+- **Nacional:** aplica-se a toda a operação.
+- **Estadual:** exige uma UF e se aplica quando ela coincide com a UF do workspace.
+- **Municipal:** exige UF e município; ambos precisam coincidir com a localidade do workspace.
+
+A página permite editar, excluir, buscar e filtrar por ano e abrangência. É possível registrar referência legal e observações. A opção anual repete o mesmo dia e mês nos anos consultados; datas móveis devem ser cadastradas por ano. Um feriado anual de 29/02 aparece somente em anos bissextos. Não são inferidas vigências legais nem importados calendários externos.
+
+Em **Localidade do workspace**, selecione a UF e, se necessário, o município. Sem localidade, a escala e o PDF consideram somente nacionais; com UF sem município, incluem também estaduais. A lista de cadastros continua mostrando outras localidades, identificadas como fora da localidade atual. Comparações de município ignoram maiúsculas, acentos e espaços duplicados, mas exigem o nome completo; não há consulta de códigos IBGE.
+
+Datas aplicáveis recebem um marcador na escala e um asterisco no PDF mensal. O PDF inclui uma listagem dos feriados considerados, com abrangência, localidade e referência. A sinalização não cria folga, não bloqueia turnos automaticamente e não calcula adicionais ou compensações. Essas decisões dependem do enquadramento e da norma aplicável.
+
+O cadastro e a localidade são salvos no mesmo localStorage do workspace, sem conexão a um banco compartilhado. Dados antigos sem `holidays` ou `workspaceLocation` continuam compatíveis. O armazenamento e a autenticação mantêm os limites já descritos neste README.

@@ -169,3 +169,39 @@ test('confirmed folgas persist and can be replaced by a validated shift',async({
  await page.getByRole('button',{name:'Validar e salvar'}).click();
  await expect(row.locator('.confirmed-off')).toHaveCount(0);await expect(row.locator('.shift')).toHaveCount(1);
 });
+
+test('workspace holiday registry supports national, state and city entries, locality, editing and deletion',async({page})=>{
+ await page.getByRole('button',{name:'Feriados',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Feriados da operação.'})).toBeVisible();
+ const add=async(name:string,scope:string)=>{
+  await page.getByRole('button',{name:'Novo feriado',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Novo feriado'});
+  await dialog.getByLabel('Nome do feriado',{exact:true}).fill(name);await dialog.getByLabel('Data',{exact:true}).fill(today());await dialog.getByLabel('Abrangência',{exact:true}).selectOption(scope);
+  if(scope!=='nacional')await dialog.getByLabel('Estado (UF)',{exact:true}).selectOption('RN');
+  if(scope==='municipal')await dialog.getByLabel('Município',{exact:true}).fill('Mossoró');
+  await dialog.getByRole('button',{name:'Cadastrar feriado'}).click();await expect(dialog).toHaveCount(0);
+ };
+ await add('Feriado nacional de teste','nacional');await add('Feriado estadual de teste','estadual');await add('Feriado municipal de teste','municipal');
+ await expect(page.locator('.holiday-table tbody tr')).toHaveCount(3);
+ await page.getByLabel('UF da operação',{exact:true}).selectOption('RN');await page.getByLabel('Município da operação',{exact:true}).fill('Mossoró');await page.getByRole('button',{name:'Salvar localidade'}).click();
+ await page.getByRole('button',{name:'Escalas',exact:true}).click();
+ await expect(page.locator('.holiday-marker')).toHaveCount(1);await expect(page.locator('.holiday-marker')).toHaveAttribute('title',/Feriado nacional de teste; Feriado estadual de teste; Feriado municipal de teste/);
+ await page.reload();await page.getByRole('button',{name:'Feriados',exact:true}).click();
+ await expect(page.locator('.holiday-table tbody tr')).toHaveCount(3);await expect(page.getByLabel('Município da operação',{exact:true})).toHaveValue('Mossoró');
+ await page.getByRole('button',{name:'Editar feriado Feriado municipal de teste',exact:true}).click();
+ const edit=page.getByRole('dialog',{name:'Editar feriado'});await edit.getByLabel('Nome do feriado',{exact:true}).fill('Feriado municipal ajustado');await edit.getByRole('button',{name:'Salvar alterações'}).click();await expect(edit).toHaveCount(0);
+ await page.getByLabel('Filtrar abrangência').selectOption('municipal');await expect(page.locator('.holiday-table tbody tr')).toHaveCount(1);await expect(page.locator('.holiday-table')).toContainText('Feriado municipal ajustado');
+ await page.getByRole('button',{name:'Excluir feriado Feriado municipal ajustado',exact:true}).click();const confirmation=page.getByRole('dialog',{name:'Excluir feriado?'});await confirmation.getByRole('button',{name:'Excluir feriado',exact:true}).click();
+ await page.getByLabel('Filtrar abrangência').selectOption('todos');await expect(page.locator('.holiday-table tbody tr')).toHaveCount(2);
+ await page.screenshot({path:'/tmp/escala-feriados-desktop.png',fullPage:true});
+});
+test('holiday recurrence, required municipality and duplicate protection work on mobile',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'Abrir menu'}).click();await page.getByRole('button',{name:'Feriados',exact:true}).click();
+ await page.getByRole('button',{name:'Novo feriado',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Novo feriado'});
+ await dialog.getByLabel('Nome do feriado',{exact:true}).fill('Aniversário de teste');await dialog.getByLabel('Data',{exact:true}).fill('2026-12-25');await dialog.getByLabel('Abrangência',{exact:true}).selectOption('municipal');await dialog.getByLabel('Estado (UF)',{exact:true}).selectOption('RN');
+ await dialog.getByRole('button',{name:'Cadastrar feriado'}).click();await expect(dialog).toBeVisible();expect(await dialog.getByLabel('Município',{exact:true}).evaluate((input:HTMLInputElement)=>input.validity.valueMissing)).toBe(true);
+ await dialog.getByLabel('Município',{exact:true}).fill('Mossoró');await dialog.getByRole('checkbox',{name:'Repetir no mesmo dia e mês todos os anos'}).check();await dialog.getByRole('button',{name:'Cadastrar feriado'}).click();await expect(dialog).toHaveCount(0);
+ await page.getByLabel('Ano dos feriados').fill('2027');await expect(page.locator('.holiday-table')).toContainText('25/12');await expect(page.locator('.holiday-table')).toContainText('Anual');
+ await page.getByRole('button',{name:'Novo feriado',exact:true}).click();await dialog.getByLabel('Nome do feriado',{exact:true}).fill('aniversario de teste');await dialog.getByLabel('Data',{exact:true}).fill('2027-12-25');await dialog.getByLabel('Abrangência',{exact:true}).selectOption('municipal');await dialog.getByLabel('Estado (UF)',{exact:true}).selectOption('RN');await dialog.getByLabel('Município',{exact:true}).fill('mossoro');await dialog.getByRole('button',{name:'Cadastrar feriado'}).click();await expect(dialog.locator('.form-errors')).toContainText('Já existe um feriado');await dialog.getByRole('button',{name:'Cancelar',exact:true}).click();
+ await page.getByLabel('Buscar feriados').fill('mossoro');await expect(page.locator('.holiday-table tbody tr')).toHaveCount(1);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);await page.screenshot({path:'/tmp/escala-feriados-mobile.png',fullPage:true});
+});

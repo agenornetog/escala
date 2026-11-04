@@ -4,13 +4,14 @@ import { useEffect, useRef } from 'react';
 import {
   ArrowLeftRight, Bell, CalendarDays, ChevronDown, CircleHelp,
   LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen,
-  ShieldCheck, Users, X,
+  ShieldCheck, Users, Flag, X,
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Visão geral', icon: LayoutDashboard },
   { name: 'Escalas', icon: CalendarDays },
   { name: 'Colaboradores', icon: Users },
+  { name: 'Feriados', icon: Flag },
   { name: 'Trocas de turno', icon: ArrowLeftRight },
   { name: 'Regras e limites', icon: ShieldCheck },
 ];
