@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { loginRequired } from '@/lib/access';
 import { SESSION_COOKIE, verifySession } from '@/lib/auth';
 export function proxy(request: NextRequest) {
+  if (!loginRequired()) return NextResponse.next();
   const path = request.nextUrl.pathname;
   if (path === '/login' || path === '/api/auth/login' || path === '/api/auth/logout') return NextResponse.next();
   if (verifySession(request.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();

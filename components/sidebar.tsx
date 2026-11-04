@@ -17,6 +17,7 @@ const navigation = [
 
 type Props = {
   page: string;
+  openAccess?: boolean;
   collapsed: boolean;
   mobileOpen: boolean;
   pendingCount: number;
@@ -31,7 +32,7 @@ type Props = {
 };
 
 export default function Sidebar({
-  page, collapsed, mobileOpen, pendingCount, notificationCount,
+  page, openAccess=false, collapsed, mobileOpen, pendingCount, notificationCount,
   onNavigate, onToggle, onMobileOpen, onMobileClose, onHelp,
   onNotifications, onLogout,
 }: Props) {
@@ -93,7 +94,7 @@ export default function Sidebar({
       <div className="sidebar-footer">
         <button className="sidebar-action" aria-label="Abrir notificações" title={collapsed ? 'Notificações' : undefined} onClick={notifications}><Bell size={18} /><span className="sidebar-label">Notificações</span>{notificationCount > 0 && <span className="sidebar-indicator" aria-hidden="true" />}</button>
         <button className="sidebar-action" aria-label="Central de ajuda" title={collapsed ? 'Central de ajuda' : undefined} onClick={help}><CircleHelp size={18} /><span className="sidebar-label">Central de ajuda</span></button>
-        <div className="sidebar-account"><button className="sidebar-profile" aria-label="Sobre o ambiente" title={collapsed ? 'Administrador local' : undefined} onClick={help}><span className="avatar account-avatar">AG</span><span className="sidebar-label"><strong>Administrador</strong><small>Acesso local</small></span></button><button className="icon-btn sidebar-logout" aria-label="Sair da conta" title="Sair da conta" onClick={onLogout}><LogOut size={18} /></button></div>
+        <div className="sidebar-account"><button className="sidebar-profile" aria-label="Sobre o ambiente" title={collapsed ? (openAccess?'Acesso temporário':'Administrador local') : undefined} onClick={help}><span className="avatar account-avatar">{openAccess?'V':'AG'}</span><span className="sidebar-label"><strong>{openAccess?'Visitante':'Administrador'}</strong><small>{openAccess?'Acesso temporário':'Acesso local'}</small></span></button>{!openAccess&&<button className="icon-btn sidebar-logout" aria-label="Sair da conta" title="Sair da conta" onClick={onLogout}><LogOut size={18} /></button>}</div>
       </div>
     </aside>
     {mobileOpen && <button className="menu-scrim" tabIndex={-1} aria-label="Fechar navegação" onClick={onMobileClose} />}

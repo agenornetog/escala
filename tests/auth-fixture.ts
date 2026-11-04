@@ -5,6 +5,7 @@ export const testEmail = 'admin@example.test';
 export const testPassword = 'test-only-password-2026';
 const salt = '0123456789abcdef0123456789abcdef';
 export const testAuthEnv = {
+ ESCALA_REQUIRE_LOGIN: 'true',
  ESCALA_ADMIN_EMAIL: testEmail,
  ESCALA_ADMIN_PASSWORD: '',
  ESCALA_ADMIN_PASSWORD_HASH: `scrypt$${salt}$${scryptSync(testPassword, salt, 64).toString('hex')}`,

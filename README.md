@@ -9,11 +9,10 @@ Requer Node.js 22 ou 24 e npm. Use o checkout existente em `/workspace/escala`; 
 ```bash
 cd /workspace/escala
 npm ci
-npm run auth:setup
 npm run dev
 ```
 
-O servidor usa a porta 3000. Dados fictícios são criados na primeira abertura, com datas relativas à semana atual em Brasília. Defina o acesso de administrador com `npm run auth:setup`; o comando cria `.env.local`, ignorado pelo Git. Sem configuração, o sistema mostra a tela de login com acesso indisponível e mantém painel/API bloqueados.
+O servidor usa a porta 3000. Dados fictícios são criados na primeira abertura, com datas relativas à semana atual em Brasília. A pedido do usuário, há acesso público temporário até 06/11/2026 às 15:02:47 (Brasília), sem precisar configurar credenciais. O prazo é fixo no servidor. Depois dele, o login volta a ser obrigatório. Para antecipar a proteção e configurar o administrador localmente, execute `npm run auth:setup`; o comando cria `.env.local`, ignorado pelo Git, e ativa `ESCALA_REQUIRE_LOGIN=true`. Com a proteção ativa e sem credenciais válidas, painel/API permanecem bloqueados.
 
 ```bash
 npm test
@@ -36,7 +35,7 @@ npm start
 
 ## Limites do MVP
 
-O armazenamento é **local ao navegador**, com login de administrador único, sem compartilhamento ou banco conectado. Não use dados pessoais reais em um dispositivo compartilhado. A API é um validador sem persistência; o cliente envia o planejamento inteiro. O login protege as rotas, mas não criptografa nem remove o localStorage no logout. Os dados locais continuam no dispositivo e não há isolamento entre contas. Não constitui uma solução multiusuário.
+O armazenamento é **local ao navegador**, com login de administrador único, sem compartilhamento ou banco conectado. Não use dados pessoais reais em um dispositivo compartilhado. A API é um validador sem persistência; o cliente envia o planejamento inteiro. Quando ativado, o login protege as rotas, mas não criptografa nem remove o localStorage no logout. Os dados locais continuam no dispositivo e não há isolamento entre contas. Não constitui uma solução multiusuário.
 
 Os perfis 5x2 e 6x1 limitam a sequência a cinco ou seis períodos de trabalho sem descanso semanal completo, respectivamente. Não são geradores nem prova de cumprimento de todas as folgas do regime, particularmente das duas folgas do 5x2. Os bloqueios usam os parâmetros configurados, sem interpretação automática da legislação ou CCT. A validação só conhece os turnos fornecidos; não certifica DSR em períodos incompletos. O descanso semanal combinado é verificado entre períodos conhecidos ao atingir o máximo de períodos sem descanso completo; histórico incompleto continua sendo uma limitação explícita. Intervalos de refeições são descontados em minutos; não há posição exata da pausa. Horas de turnos que atravessam meia-noite são atribuídas à data de entrada para totais diário e semanal. Um turno noturno conta como um período na sequência, enquanto todos os dias alcançados entram na análise dos domingos. Horários usam o fuso fixo UTC−03:00, adequado a Brasília nas datas atuais, sem histórico de horário de verão.
 
@@ -70,7 +69,7 @@ A interface segue a referência visual Pastel enviada pelo usuário: fundo Paper
 
 ## Login de administrador
 
-A página `/login` é a entrada do sistema. Acesso à raiz e à API de validação exige uma sessão válida no servidor. O usuário configura o próprio e-mail e senha; não existe senha padrão nem cadastro público.
+Quando a proteção está ativa ou a janela pública expirou, `/login` é a entrada do sistema e a raiz/API de validação exigem uma sessão válida. Durante a janela pública autorizada, `/login` redireciona diretamente ao painel. O usuário configura o próprio e-mail e senha; não existe senha padrão nem cadastro público.
 
 Execute `npm run auth:setup` em terminal interativo. O comando solicita o e-mail, uma senha de 12 a 256 caracteres (sem eco no terminal) e sua confirmação. Gera hash scrypt com salt e um segredo aleatório, preserva outras variáveis de `.env.local` e pede confirmação antes de substituir um acesso existente. A senha original não é salva. Reinicie o servidor após configurar.
 
@@ -111,3 +110,15 @@ A revisão técnica e suas fontes pendentes estão em [Auditoria CLT](docs/audit
 ## Menu lateral
 
 No computador, use o botão ao lado da marca para recolher ou expandir o menu. Os ícones continuam acessíveis quando recolhido; o nome de cada opção aparece ao passar o mouse e permanece disponível para tecnologias assistivas. A preferência é salva somente neste navegador e não altera os dados da escala. No celular, use o botão de menu para abrir o painel lateral; selecione uma página, toque na área externa ou pressione Esc para fechá-lo.
+
+## Acesso público temporário autorizado
+
+A pedido do usuário, o painel e a API de validação ficam acessíveis sem login até **06/11/2026 às 15:02:47, horário de Brasília** (`2026-11-06T18:02:47.000Z`). A janela foi definida em 04/11/2026, com duração de 48 horas; não é renovada por novos deploys ou acessos.
+
+O prazo fixo em `lib/access.ts` é conferido no proxy, na página principal e na API. Ao vencer, todas essas rotas voltam a exigir autenticação, mesmo que `ESCALA_REQUIRE_LOGIN=false` permaneça configurado. Valores desconhecidos do sinalizador também exigem login. Não existe um sinalizador que prolongue essa janela indefinidamente.
+
+Para fechar o acesso **antes** do prazo, configure `ESCALA_REQUIRE_LOGIN=true` no servidor, com as credenciais privadas do administrador, e faça novo deploy. `npm run auth:setup` também ativa esse sinalizador no ambiente local. A ausência do sinalizador mantém a janela autorizada, mas não ignora seu vencimento.
+
+A interface indica acesso temporário e o prazo, identifica o visitante e oculta a opção de sair de uma sessão que não existe. A validação das regras de jornada continua obrigatória. O armazenamento permanece local a cada navegador; não foi conectado um banco compartilhado nem foram criadas credenciais padrão.
+
+Os testes de navegador usam três servidores isolados: 3105 com login configurado, 3106 com proteção ativa sem credenciais e 3107 com abertura temporária. O teste público de navegador só executa enquanto a janela real está vigente; a expiração no instante exato e a impossibilidade de prolongar pelo sinalizador são verificadas nos testes de proxy/API com relógio controlado.

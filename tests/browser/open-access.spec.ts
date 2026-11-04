@@ -1,0 +1,20 @@
+import { test, expect } from '@playwright/test';
+import { OPEN_ACCESS_UNTIL } from '../../lib/access';
+test.use({baseURL:'http://127.0.0.1:3107'});
+test('bounded public access enters directly and validates shifts without a session',async({page})=>{
+ test.skip(Date.now()>=Date.parse(OPEN_ACCESS_UNTIL),'A janela pública venceu; o bloqueio após o prazo é verificado no teste do proxy/API.');
+ await page.goto('/login');await expect(page).toHaveURL('http://127.0.0.1:3107/');
+ await expect(page.getByRole('heading',{name:'Sua equipe, no ritmo certo.'})).toBeVisible();
+ await expect(page.getByText('Acesso aberto para testes até',{exact:false})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Sair da conta'})).toHaveCount(0);
+ expect((await page.context().cookies()).some(cookie=>cookie.name==='escala_session')).toBe(false);
+ await page.locator('.shift').first().click();
+ const dialog=page.getByRole('dialog');
+ await dialog.getByLabel('Saída',{exact:true}).fill('18:00');
+ await dialog.getByRole('button',{name:'Validar e salvar'}).click();
+ await expect(dialog.locator('.form-errors')).toContainText('excede o limite diário');
+ await dialog.getByLabel('Saída',{exact:true}).fill('16:00');
+ await dialog.getByRole('button',{name:'Validar e salvar'}).click();
+ await expect(dialog).toHaveCount(0);await expect(page.locator('.shift').first()).toContainText('16:00');
+ await page.reload();await expect(page.locator('.shift').first()).toContainText('16:00');
+});

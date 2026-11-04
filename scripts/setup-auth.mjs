@@ -28,9 +28,9 @@ try {
   const salt = randomBytes(16).toString('hex');
   const hash = `scrypt$${salt}$${scryptSync(password, salt, 64).toString('hex')}`;
   // Next.js expands dollar signs in .env files; escape them in the stored hash.
-  const retained = existing.split('\n').filter(line => !/^ESCALA_(ADMIN_EMAIL|ADMIN_PASSWORD_HASH|SESSION_SECRET)=/.test(line)).join('\n').trimEnd();
-  const entries = `ESCALA_ADMIN_EMAIL=${JSON.stringify(email).replace(/\$/g, '\\$')}\nESCALA_ADMIN_PASSWORD_HASH="${hash.replace(/\$/g, '\\$')}"\nESCALA_SESSION_SECRET="${randomBytes(32).toString('hex')}"\n`;
+  const retained = existing.split('\n').filter(line => !/^ESCALA_(ADMIN_EMAIL|ADMIN_PASSWORD_HASH|SESSION_SECRET|REQUIRE_LOGIN)=/.test(line)).join('\n').trimEnd();
+  const entries = `ESCALA_REQUIRE_LOGIN=true\nESCALA_ADMIN_EMAIL=${JSON.stringify(email).replace(/\$/g, '\\$')}\nESCALA_ADMIN_PASSWORD_HASH="${hash.replace(/\$/g, '\\$')}"\nESCALA_SESSION_SECRET="${randomBytes(32).toString('hex')}"\n`;
   await writeFile(path, (retained ? retained + '\n' : '') + entries, { mode: 0o600 });
   await chmod(path, 0o600);
-  console.log('Acesso configurado em .env.local. Reinicie o servidor. Nenhuma senha em texto puro foi salva.');
+  console.log('Login reativado e acesso configurado em .env.local. Reinicie o servidor. Nenhuma senha em texto puro foi salva.');
 } catch (error) { console.error(error.message); process.exitCode = 1; } finally { rl.close(); }
