@@ -1,14 +1,10 @@
 import { addDays, monday } from './dates';
 import { profileFor, profileProblems } from './rule-profile';
-import type { Employee, Issue, Rules, Shift } from './types';
+import { interval, shiftTouchesDate } from './shift-time';
+export { interval } from './shift-time';
+import type { DayOff, Employee, Issue, Rules, Shift } from './types';
 export const defaultRules: Rules = { dailyHours: 8, weeklyHours: 44, intershiftHours: 11, weeklyRestHours: 35, maxConsecutiveDays: 6, longBreakMinutes: 60, coverage: 4 };
-export function interval(s: Shift) {
-  const start = Date.parse(`${s.date}T${s.start}:00-03:00`);
-  let end = Date.parse(`${s.date}T${s.end}:00-03:00`);
-  if (end <= start) end += 86400000;
-  return { start, end, hours: (end - start) / 3600000 - s.breakMinutes / 60 };
-}
-export function validate(shifts: Shift[], employees: Employee[], rules: Rules): Issue[] {
+export function validate(shifts: Shift[], employees: Employee[], rules: Rules, dayOffs: DayOff[]=[]): Issue[] {
   const issues: Issue[] = [];
   const push = (code: string, severity: Issue['severity'], s: Shift, message: string) => issues.push({ code, severity, employeeId: s.employeeId, date: s.date, message });
   for (const employee of employees) {
@@ -16,6 +12,7 @@ export function validate(shifts: Shift[], employees: Employee[], rules: Rules): 
     const list = shifts.filter(s => s.employeeId === employee.id).sort((a,b) => interval(a).start - interval(b).start);
     for(const problem of profileProblems(profile)) issues.push({code:'profile',severity:'error',employeeId:employee.id,date:list[0]?.date ?? '',message:problem});
     if(profileProblems(profile).length) continue;
+    for(const off of dayOffs.filter(off=>off.employeeId===employee.id)){if(list.some(shift=>shiftTouchesDate(shift,off.date)))issues.push({code:'day-off',severity:'error',employeeId:employee.id,date:off.date,message:'Folga confirmada coincide com trabalho nesta data, inclusive continuação de turno noturno. Ajuste o turno ou remova a folga.'});}
     const daily = new Map<string, number>(); const weeks = new Map<string, number>();
     list.forEach((s, index) => {
       const current = interval(s);

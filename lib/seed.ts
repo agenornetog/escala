@@ -16,5 +16,5 @@ export function createSeed(): Store {
   const days = e.regime==='6x1' ? [0,1,2,3,4,5] : ei%3===1 ? [1,2,3,4,5] : [0,1,2,3,4];
   if(days.includes(d)) { const short=e.regime==='6x1'; const late=ei===2||ei===3; shifts.push({id:`s-${ei}-${d}`,employeeId:e.id,date:addDays(base,d),start:late?'12:00':'08:00',end:short?(d===5?'12:00':'17:00'):late?'21:00':'17:00',breakMinutes:short&&d===5?0:60}); }
  }});
- return {version:1,employees,shifts,rules:{...defaultRules},swaps:[]};
+ return {version:1,employees,shifts,rules:{...defaultRules},swaps:[],dayOffs:employees.flatMap(employee=>Array.from({length:7},(_,d)=>addDays(base,d)).filter(date=>!shifts.some(s=>s.employeeId===employee.id&&s.date===date)).map(date=>({id:`off-${employee.id}-${date}`,employeeId:employee.id,date})))};
 }

@@ -1,5 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {testEmail,testPassword} from '../auth-fixture';
+import {addMonths,monthDays,today} from '../../lib/dates';
+import {readFile} from 'node:fs/promises';
 test.beforeEach(async({page})=>{const response=await page.request.post('/api/auth/login',{headers:{origin:'http://127.0.0.1:3105'},data:{email:testEmail,password:testPassword}});expect(response.status()).toBe(200);await page.goto('/');await expect(page.getByRole('heading',{name:'Sua equipe, no ritmo certo.'})).toBeVisible();});
 test('renders the schedule, filters teams and changes the week',async({page})=>{
  await expect(page.locator('tbody tr')).toHaveCount(8);
@@ -10,7 +12,9 @@ test('renders the schedule, filters teams and changes the week',async({page})=>{
  await page.getByRole('button',{name:'Hoje',exact:true}).click();
  await expect(page.locator('.shift').first()).toBeVisible();
  await page.getByRole('button',{name:'Mês',exact:true}).click();
- await expect(page.locator('thead th')).toHaveCount(29);
+ await expect(page.locator('thead th')).toHaveCount(monthDays(today().slice(0,7)).length+1);
+ await page.getByRole('button',{name:'Próximo mês',exact:true}).click();
+ await expect(page.locator('thead th').last()).toContainText(String(monthDays(addMonths(today().slice(0,7),1)).length));
 });
 test('blocks an invalid shift and saves a valid edit across reload',async({page})=>{
  await page.locator('.shift').first().click();
@@ -133,4 +137,35 @@ test('new individual workload blocks an eight-hour shift and accepts six hours',
  await page.getByRole('button',{name:'Validar e salvar'}).click();await expect(page.locator('.form-errors')).toContainText('limite diário de 6h');
  await page.getByLabel('Saída',{exact:true}).fill('14:15');await page.getByLabel('Intervalo (minutos)',{exact:true}).fill('15');
  await page.getByRole('button',{name:'Validar e salvar'}).click();await expect(row.locator('.shift')).toHaveCount(1);
+});
+
+test('monthly PDF downloads all calendar days with team and employee filters',async({page})=>{
+ await page.getByRole('button',{name:'PDF mensal',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'PDF da escala mensal'});
+ await dialog.getByLabel('Mês de referência').fill('2026-12');
+ await expect(dialog.locator('.report-preview-title')).toContainText('31 dias');
+ await dialog.getByLabel('Equipe',{exact:true}).selectOption('Campo');
+ await expect(dialog.locator('.report-preview-title')).toContainText('3 pessoas');
+ await dialog.getByLabel('Colaborador',{exact:true}).selectOption('e1');
+ await expect(dialog.locator('.report-preview-title')).toContainText('1 pessoas');
+ await dialog.getByRole('checkbox',{name:'Incluir listagem diária de escalados e folgas'}).uncheck();
+ const downloaded=page.waitForEvent('download');
+ await dialog.getByRole('button',{name:'Baixar PDF mensal'}).click();
+ const download=await downloaded;expect(download.suggestedFilename()).toBe('escala-mensal-2026-12.pdf');
+ const file=await readFile((await download.path())!);expect(file.subarray(0,5).toString()).toBe('%PDF-');expect(file.length).toBeGreaterThan(1000);
+ expect(file.includes(Buffer.from('/FontFile2'))).toBe(true);
+ await dialog.getByRole('button',{name:'Fechar',exact:true}).first().click();
+ await expect(dialog).toHaveCount(0);
+});
+test('confirmed folgas persist and can be replaced by a validated shift',async({page})=>{
+ await page.getByRole('button',{name:'Próxima semana',exact:true}).click();
+ const row=page.locator('tbody tr').filter({hasText:'Ana Costa'});
+ await row.locator('.day-off').first().click();
+ await page.getByRole('button',{name:'Marcar folga nesta data',exact:true}).click();
+ await expect(row.locator('.confirmed-off')).toHaveCount(1);
+ await page.reload();await page.getByRole('button',{name:'Próxima semana',exact:true}).click();
+ await expect(row.locator('.confirmed-off')).toHaveCount(1);
+ await row.locator('.confirmed-off').click();
+ await page.getByRole('button',{name:'Validar e salvar'}).click();
+ await expect(row.locator('.confirmed-off')).toHaveCount(0);await expect(row.locator('.shift')).toHaveCount(1);
 });

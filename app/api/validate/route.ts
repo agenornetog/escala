@@ -3,7 +3,7 @@ import { loginRequired } from '@/lib/access';
 import { authenticated } from '@/lib/auth';
 import { validate } from '@/lib/validation';
 import { ruleLimitKeys, ruleRanges, validRuleValue } from '@/lib/rule-profile';
-import type { Employee, Rules, Shift } from '@/lib/types';
+import type { DayOff, Employee, Rules, Shift } from '@/lib/types';
 function validDate(value: unknown): value is string { return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(value+'T12:00Z').toISOString().slice(0,10)===value; }
 export async function POST(request: Request) {
  if (loginRequired() && !authenticated(request)) return NextResponse.json({error: 'Sua sessão expirou. Entre novamente.'}, {status:401, headers:{'Cache-Control':'no-store'}});
@@ -27,7 +27,9 @@ export async function POST(request: Request) {
       }
     }
   }
-  const issues=validate(shifts,employees,rules);
+  const dayOffs=(data.dayOffs??[]) as DayOff[];
+  if(!Array.isArray(dayOffs)||dayOffs.length>100000||dayOffs.some(off=>typeof off.id!=='string'||!ids.has(off.employeeId)||!validDate(off.date))||new Set(dayOffs.map(off=>off.id)).size!==dayOffs.length||new Set(dayOffs.map(off=>`${off.employeeId}/${off.date}`)).size!==dayOffs.length)throw new Error('invalid');
+  const issues=validate(shifts,employees,rules,dayOffs);
   return NextResponse.json({valid:!issues.some(i=>i.severity==='error'),issues,compliance:{certified:false,scope:'configured-planning-rules',pending:['CCT e enquadramento individual','Histórico completo e DSR','Adicionais e hora noturna','Limites semanais em turnos que atravessam a semana']}});
  } catch { return NextResponse.json({error:'Dados de escala inválidos. Confira os campos e tente novamente.'},{status:400}); }
 }

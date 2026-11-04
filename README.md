@@ -24,7 +24,7 @@ npm start
 
 ## O que funciona
 
-- Escala semanal e visualização de 28 dias, navegação entre períodos e filtro de equipe.
+- Escala semanal e mês civil completo (28, 29, 30 ou 31 dias), navegação entre períodos e filtro de equipe.
 - Cadastro de colaboradores, criação, edição e exclusão de turnos.
 - Validação compartilhada entre navegador e `POST /api/validate`; alterações na escala passam pela API antes de persistir.
 - Bloqueio de sobreposição, intervalo interjornada, limites diário/semanal, intervalos intrajornada, dias consecutivos, descanso combinado entre turnos conhecidos e revezamento de domingos por colaborador. Aviso próximo ao limite semanal.
@@ -39,7 +39,7 @@ O armazenamento é **local ao navegador**, com login de administrador único, se
 
 Os perfis 5x2 e 6x1 limitam a sequência a cinco ou seis períodos de trabalho sem descanso semanal completo, respectivamente. Não são geradores nem prova de cumprimento de todas as folgas do regime, particularmente das duas folgas do 5x2. Os bloqueios usam os parâmetros configurados, sem interpretação automática da legislação ou CCT. A validação só conhece os turnos fornecidos; não certifica DSR em períodos incompletos. O descanso semanal combinado é verificado entre períodos conhecidos ao atingir o máximo de períodos sem descanso completo; histórico incompleto continua sendo uma limitação explícita. Intervalos de refeições são descontados em minutos; não há posição exata da pausa. Horas de turnos que atravessam meia-noite são atribuídas à data de entrada para totais diário e semanal. Um turno noturno conta como um período na sequência, enquanto todos os dias alcançados entram na análise dos domingos. Horários usam o fuso fixo UTC−03:00, adequado a Brasília nas datas atuais, sem histórico de horário de verão.
 
-Não cobre 12x36, feriados, banco de horas, adicionais, hora noturna reduzida, horas extras autorizadas, múltiplos vínculos ou integração de ponto. Valores sugeridos devem ser revisados pelo responsável trabalhista conforme categoria e CCT. A cobertura é uma contagem diária de pessoas, sem checagem por faixa horária ou cargo. O modo de 28 dias é uma janela iniciada na semana selecionada, não um mês civil. WhatsApp e notificações externas não estão conectados.
+Não cobre 12x36, feriados, banco de horas, adicionais, hora noturna reduzida, horas extras autorizadas, múltiplos vínculos ou integração de ponto. Valores sugeridos devem ser revisados pelo responsável trabalhista conforme categoria e CCT. A cobertura é uma contagem diária de pessoas, sem checagem por faixa horária ou cargo. O modo mensal mostra do primeiro ao último dia do mês civil. WhatsApp e notificações externas não estão conectados.
 
 ## Evolução para Supabase
 
@@ -122,3 +122,15 @@ Para fechar o acesso **antes** do prazo, configure `ESCALA_REQUIRE_LOGIN=true` n
 A interface indica acesso temporário e o prazo, identifica o visitante e oculta a opção de sair de uma sessão que não existe. A validação das regras de jornada continua obrigatória. O armazenamento permanece local a cada navegador; não foi conectado um banco compartilhado nem foram criadas credenciais padrão.
 
 Os testes de navegador usam três servidores isolados: 3105 com login configurado, 3106 com proteção ativa sem credenciais e 3107 com abertura temporária. O teste público de navegador só executa enquanto a janela real está vigente; a expiração no instante exato e a impossibilidade de prolongar pelo sinalizador são verificadas nos testes de proxy/API com relógio controlado.
+
+## PDF mensal e folgas confirmadas
+
+Em **Escalas → PDF mensal**, selecione o mês, a equipe e, se quiser, um colaborador. **Baixar PDF mensal** gera o arquivo no navegador, usando os dados salvos nesse navegador. O quadro de todos os dias é A3 paisagem; a opção de listagem diária acrescenta páginas A4 paisagem com nomes, turnos, folgas e pendências. Desmarque a listagem diária para gerar somente o quadro mensal. Não é necessária uma conta em serviço de PDF ou uma janela de impressão.
+
+O relatório usa **horários** para presença prevista, **F** para folga confirmada e **?** para dia sem planejamento. Não conclui que alguém está disponível para convocação só porque não há turno. Mostra continuação dos turnos noturnos, inclusive quando o turno começou no mês anterior; término exatamente à meia-noite não ocupa o dia seguinte. Conflitos importados entre turno e folga são sinalizados, não ocultados.
+
+Para confirmar uma folga, clique em um dia sem turno e use **Marcar folga nesta data**. Para desfazer, use **Remover folga confirmada**. Salvar um novo turno substitui a folga da data selecionada; a API continua bloqueando conflito com uma folga do dia seguinte em turnos noturnos. A cópia semanal inclui folgas e não sobrescreve uma semana que já tenha planejamento.
+
+Dados antigos sem registros de folga continuam válidos, mas os vazios passam a ser identificados como **sem planejamento**. Não há migração que invente folgas. A equipe fictícia de primeira abertura já contém folgas explícitas apenas na semana de demonstração. A ausência de trabalho em outras semanas não cria folgas automaticamente.
+
+A exportação não calcula horas de disponibilidade extra, banco de horas ou remuneração e não certifica conformidade com a CLT. O PDF registra a data de emissão em Brasília e o período/filtro escolhido. Fontes Figtree são incorporadas e carregadas localmente de `public/fonts`, sem Google Fonts. Os arquivos TTF são conversões sem alteração de desenho das fontes Latin 400 e 600 do pacote `@fontsource/figtree` 5.3.0; a licença OFL está em `public/fonts/OFL.txt`. Esses arquivos já estão no repositório, portanto não há etapa de conversão no build.

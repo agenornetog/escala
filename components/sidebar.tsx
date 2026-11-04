@@ -46,7 +46,10 @@ export default function Sidebar({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const root = panel.current;
-    root?.querySelector<HTMLButtonElement>('.sidebar-close')?.focus();
+    const focusClose=()=>{if(!root?.contains(document.activeElement))root?.querySelector<HTMLButtonElement>('.sidebar-close')?.focus({preventScroll:true});};
+    const focusFrame=requestAnimationFrame(focusClose);
+    const onTransitionEnd=(event:TransitionEvent)=>{if(event.target===root)focusClose();};
+    root?.addEventListener('transitionend',onTransitionEnd);
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); onMobileClose(); }
       if (event.key !== 'Tab' || !root) return;
@@ -63,6 +66,8 @@ export default function Sidebar({
     document.addEventListener('keydown', handleKey);
     media.addEventListener('change', handleResize);
     return () => {
+      cancelAnimationFrame(focusFrame);
+      root?.removeEventListener('transitionend',onTransitionEnd);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleKey);
       media.removeEventListener('change', handleResize);
