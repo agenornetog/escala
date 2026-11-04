@@ -1,13 +1,14 @@
 'use client';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Activity, ArrowDownToLine, ArrowLeftRight, ArrowRight, Bell, CalendarDays, Check, CheckCheck, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Copy, LayoutDashboard, LoaderCircle, LogOut, Menu, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Users, X, AlertTriangle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { Activity, ArrowDownToLine, ArrowLeftRight, ArrowRight, CalendarDays, Check, CheckCheck, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Copy, LoaderCircle, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Users, X, AlertTriangle } from 'lucide-react';
 import { addDays, labelDate, monday, today } from '@/lib/dates';
 import { createSeed } from '@/lib/seed';
 import { interval, validate } from '@/lib/validation';
 import { profileFor, ruleLimitKeys } from '@/lib/rule-profile';
+import Sidebar from '@/components/sidebar';
 import type { Employee, Issue, Rules, Shift, Store } from '@/lib/types';
+const SIDEBAR_STORAGE='escala.sidebar.collapsed.v1';
 const STORAGE='escala.workspace.v1';
-const navigation=[{name:'Visão geral',icon:LayoutDashboard},{name:'Escalas',icon:CalendarDays},{name:'Colaboradores',icon:Users},{name:'Trocas de turno',icon:ArrowLeftRight},{name:'Regras e limites',icon:ShieldCheck}];
 const weekNames=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
 const initials=(name:string)=>name.split(' ').map(s=>s[0]).slice(0,2).join('');
 function Modal({title,subtitle,close,children}:{title:string;subtitle?:string;close:()=>void;children:React.ReactNode}) {
@@ -17,6 +18,10 @@ function Modal({title,subtitle,close,children}:{title:string;subtitle?:string;cl
 function download(content:string,name:string) { const url=URL.createObjectURL(new Blob(['\ufeff'+content],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url); }
 export default function Dashboard(){
  const [store,setStore]=useState<Store|null>(null),[page,setPage]=useState('Escalas'),[week,setWeek]=useState(monday(today())),[team,setTeam]=useState('Todas as equipes'),[query,setQuery]=useState(''),[view,setView]=useState('Semana'),[mobile,setMobile]=useState(false);
+ const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
+ const closeMobile=useCallback(()=>setMobile(false),[]);
+ useEffect(()=>{try{setSidebarCollapsed(localStorage.getItem(SIDEBAR_STORAGE)==='true');}catch{/* Keep navigation usable when storage is unavailable. */}},[]);
+ function toggleSidebar(){setSidebarCollapsed(value=>{const next=!value;try{localStorage.setItem(SIDEBAR_STORAGE,String(next));}catch{/* Preference remains active for this session. */}return next;});}
  const [editingEmployee,setEditingEmployee]=useState<Employee|null>(null);
  const [modal,setModal]=useState<'shift'|'employee'|'swap'|'notifications'|'help'|null>(null),[editing,setEditing]=useState<Shift|null>(null),[cell,setCell]=useState<{employeeId:string;date:string}|null>(null),[busy,setBusy]=useState(false),[errors,setErrors]=useState<string[]>([]),[toast,setToast]=useState(''),[storageError,setStorageError]=useState(false);
  useEffect(()=>{try{const saved=localStorage.getItem(STORAGE);if(saved){const parsed=JSON.parse(saved);if(parsed.version!==1||!Array.isArray(parsed.employees)||!Array.isArray(parsed.shifts)||!Array.isArray(parsed.swaps)||!parsed.rules)throw new Error('Invalid');validate(parsed.shifts,parsed.employees,parsed.rules);setStore(parsed);}else setStore(createSeed());}catch{setStore(createSeed());setStorageError(true);}},[]);
@@ -50,22 +55,9 @@ export default function Dashboard(){
  async function copyWeek(){const target=addDays(week,7);const copied=weekShifts.map(s=>({...s,id:crypto.randomUUID(),date:addDays(s.date,7)}));if(!copied.length){setToast('Não há turnos nesta semana para copiar.');return;}if(store!.shifts.some(s=>s.date>=target&&s.date<=addDays(target,6))){setToast('A próxima semana já tem turnos. Escolha uma semana vazia.');return;}if(await commit({...store!,shifts:[...store!.shifts,...copied]},'Semana copiada. Confira a próxima semana.'))setWeek(target);}
  async function resolveSwap(id:string,approve:boolean){const swap=store!.swaps.find(s=>s.id===id)!;let next={...store!,swaps:store!.swaps.map(s=>s.id===id?{...s,status:approve?'approved' as const:'rejected' as const}:s)};if(approve){const a=store!.shifts.find(s=>s.id===swap.fromShiftId),b=store!.shifts.find(s=>s.id===swap.toShiftId);if(!a||!b){setErrors(['Um turno desta solicitação foi removido. Recuse a troca e crie uma nova solicitação.']);return;}next={...next,shifts:store!.shifts.map(s=>s.id===a.id?{...s,employeeId:b.employeeId}:s.id===b.id?{...s,employeeId:a.employeeId}:s)};await commit(next,'Troca aprovada e escala atualizada.');}else{setStore(next);setToast('Solicitação recusada.');}}
  const errorList=errors.length>0&&<div className="form-errors" role="alert"><strong>Revise antes de continuar</strong>{errors.slice(0,8).map((error,i)=><p key={i}>{error}</p>)}{errors.length>8&&<p>Mais {errors.length-8} conflitos na escala.</p>}</div>;
- return <div className="app-shell">
-  <header className={`app-header ${mobile?'menu-open':''}`}>
-    <div className="navigation-inner">
-      <a href="#" className="brand" onClick={e=>{e.preventDefault();setPage('Escalas');setMobile(false);}} aria-label="Escala — início"><span className="brand-mark" aria-hidden="true"/>escala<span className="brand-dot">.</span></a>
-      <nav id="main-navigation" aria-label="Navegação principal">{navigation.map(item=><button key={item.name} onClick={()=>{setPage(item.name);setMobile(false);setErrors([]);}} aria-current={page===item.name?'page':undefined} className={page===item.name?'nav-link active':'nav-link'}><item.icon size={17}/><span>{item.name}</span>{item.name==='Trocas de turno'&&pending.length>0&&<b className="nav-count">{pending.length}</b>}</button>)}</nav>
-      <div className="account-actions">
-        <button className="workspace" onClick={()=>setModal('help')}><span>TCM Operações</span><ChevronDown size={14}/></button>
-        <button className="notification-btn icon-btn" aria-label="Abrir notificações" onClick={()=>setModal('notifications')}><Bell size={19}/>{(pending.length+currentIssues.length)>0&&<i/>}</button>
-        <button className="avatar account-avatar" aria-label="Sobre o ambiente" onClick={()=>setModal('help')}>AG</button>
-        <button className="icon-btn" aria-label="Sair da conta" onClick={async()=>{try{const response=await fetch('/api/auth/logout',{method:'POST'});if(!response.ok)throw new Error();window.location.replace('/login');}catch{setToast('Não foi possível sair. Tente novamente.');}}}><LogOut size={18}/></button>
-        <button className="icon-btn hamburger" aria-label={mobile?'Fechar menu':'Abrir menu'} aria-expanded={mobile} aria-controls="main-navigation" onClick={()=>setMobile(!mobile)}>{mobile?<X size={21}/>:<Menu size={21}/>}</button>
-      </div>
-    </div>
-  </header>
-  {mobile&&<button className="menu-scrim" aria-label="Fechar navegação" onClick={()=>setMobile(false)}/>}
-  <div className="main-area">
+ return <div className={`app-shell ${sidebarCollapsed?'sidebar-collapsed':''}`}>
+  <Sidebar page={page} collapsed={sidebarCollapsed} mobileOpen={mobile} pendingCount={pending.length} notificationCount={pending.length+currentIssues.length} onNavigate={name=>{setPage(name);setErrors([]);}} onToggle={toggleSidebar} onMobileOpen={()=>setMobile(true)} onMobileClose={closeMobile} onHelp={()=>setModal('help')} onNotifications={()=>setModal('notifications')} onLogout={async()=>{try{const response=await fetch('/api/auth/logout',{method:'POST'});if(!response.ok)throw new Error();window.location.replace('/login');}catch{setToast('Não foi possível sair. Tente novamente.');}}}/>
+  <div className="main-area" inert={mobile}>
   <main><div className="page-heading"><div className="page-context"><span className="eyebrow">Gestão de equipes</span><span className="demo-label">Demonstração</span></div><div className="heading-row"><div><h1>{page==='Escalas'?'Sua equipe, no ritmo certo.':page==='Visão geral'?'Um olhar sobre a operação.':page==='Colaboradores'?'Pessoas que fazem acontecer.':page==='Trocas de turno'?'Flexibilidade com segurança.':'As regras da sua operação.'}</h1><p>{page==='Escalas'?'Organize os turnos, equilibre a operação e cuide de quem faz parte dela.':page==='Visão geral'?'Acompanhe os principais indicadores da semana em um só lugar.':page==='Colaboradores'?'Gerencie os colaboradores e seus perfis de jornada.':page==='Trocas de turno'?'Valide cada troca antes de atualizar a escala da equipe.':'Configure os limites usados na validação de cada turno.'}</p></div><div className="heading-actions">{(page==='Escalas'||page==='Visão geral')&&<button className="btn secondary" onClick={exportWeek}><ArrowDownToLine size={16}/>Exportar</button>}<button className="btn primary" onClick={()=>{setErrors([]);if(page==='Colaboradores')openEmployee();else if(page==='Trocas de turno')setModal('swap');else if(page==='Regras e limites')document.getElementById('rules-form')?.scrollIntoView({behavior:'smooth'});else openShift();}}><Plus size={17}/>{page==='Colaboradores'?'Novo colaborador':page==='Trocas de turno'?'Solicitar troca':page==='Regras e limites'?'Editar parâmetros':'Novo turno'}</button></div></div></div>
   {storageError&&<div className="notice warning"><AlertTriangle size={18}/><span>Não foi possível carregar ou salvar os dados locais. Exporte o trabalho antes de sair. Os dados anteriores não serão sobrescritos.</span></div>}
   {(page==='Escalas'||page==='Visão geral')&&<><div className="stats-grid"><Stat label="Colaboradores na equipe" value={String(store.employees.length).padStart(2,'0')} icon={<Users size={19}/>} note={<><span className="tiny-dot green"/> {new Set(weekShifts.map(s=>s.employeeId)).size} com turnos nesta semana</>}/><Stat label="Turnos planejados" value={String(weekShifts.length)} icon={<CalendarDays size={19}/>} note={<><span className="stat-badge">{totalHours.toLocaleString('pt-BR')}h</span> de operação planejada</>}/><Stat label="Cobertura média" value={`${Math.round(days.slice(0,7).reduce((n,d)=>n+Math.min(1,new Set(weekShifts.filter(s=>s.date===d).map(s=>s.employeeId)).size/store.rules.coverage),0)/7*100)}%`} icon={<Activity size={19}/>} note={<>Meta de {store.rules.coverage} pessoas por dia </>}/><Stat label="Conflitos de jornada" value={String(currentIssues.filter(i=>i.severity==='error').length).padStart(2,'0')} icon={<ShieldCheck size={19}/>} note={currentIssues.some(i=>i.severity==='error')?<span className="text-orange">Revise os conflitos da semana</span>:<><span className="tiny-dot green"/> Sem bloqueios nas regras avaliadas</>} good={!currentIssues.some(i=>i.severity==='error')}/></div>

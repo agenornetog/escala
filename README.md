@@ -66,7 +66,7 @@ Os testes de navegador usam Chromium em `/usr/bin/chromium` quando disponível. 
 
 ## Design
 
-A interface segue a referência visual Pastel enviada pelo usuário: fundo Paper Stone, tipografia Figtree local, um acento cobalto, superfícies planas e navegação superior responsiva. Consulte [as decisões de adaptação](docs/design.md) e [a referência original](docs/design-reference.md).
+A interface segue a referência visual Pastel enviada pelo usuário: fundo Paper Stone, tipografia Figtree local, um acento cobalto, superfícies planas e navegação lateral recolhível. Consulte [as decisões de adaptação](docs/design.md) e [a referência original](docs/design-reference.md).
 
 ## Login de administrador
 
@@ -107,3 +107,7 @@ Em **Colaboradores → Editar jornada**, marque **Usar jornada individual para e
 Os perfis comuns aceitam até 10h/dia e 44h/semana. Jornada acima de 8h/dia ou redução do intervalo padrão exige referência do acordo aplicável. Essa referência não valida sua legalidade. 12x36, banco de horas, jornada noturna remunerada, feriados e condições especiais ainda precisam de implementação própria.
 
 A revisão técnica e suas fontes pendentes estão em [Auditoria CLT](docs/auditoria-clt.md). A API distingue aprovação pelas regras cadastradas de certificação jurídica (`compliance.certified: false`). Não declare conformidade integral com a CLT com base neste MVP.
+
+## Menu lateral
+
+No computador, use o botão ao lado da marca para recolher ou expandir o menu. Os ícones continuam acessíveis quando recolhido; o nome de cada opção aparece ao passar o mouse e permanece disponível para tecnologias assistivas. A preferência é salva somente neste navegador e não altera os dados da escala. No celular, use o botão de menu para abrir o painel lateral; selecione uma página, toque na área externa ou pressione Esc para fechá-lo.

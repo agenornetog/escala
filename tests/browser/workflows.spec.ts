@@ -69,13 +69,35 @@ test('creates and approves a validated shift swap',async({page})=>{
 test('mobile navigation works without page overflow',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  await page.getByRole('button',{name:'Abrir menu'}).click();
+ const drawer=page.getByRole('dialog',{name:'Menu de navegação'});
+ await expect(drawer).toBeVisible();
+ await expect(page.getByRole('button',{name:'Fechar menu',exact:true})).toBeFocused();
+ await page.keyboard.press('Escape');
+ await expect(drawer).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Abrir menu'})).toBeFocused();
+ await page.getByRole('button',{name:'Abrir menu'}).click();
  await page.getByRole('button',{name:'Regras e limites',exact:true}).click();
+ await expect(page.getByRole('dialog',{name:'Menu de navegação'})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Perfil de jornada'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  await page.screenshot({path:'/tmp/escala-mobile.png',fullPage:true});
 });
-test('desktop layout and API error contract',async({page})=>{
+test('desktop sidebar collapses, remembers the preference and keeps navigation accessible',async({page})=>{
  await page.setViewportSize({width:1440,height:1100});
+ const sidebar=page.getByLabel('Menu de navegação',{exact:true});
+ await expect.poll(async()=>(await sidebar.boundingBox())?.width).toBe(248);
+ const before=(await page.locator('.main-area').boundingBox())!;
+ await page.getByRole('button',{name:'Recolher menu lateral'}).click();
+ await expect.poll(async()=>(await sidebar.boundingBox())?.width).toBe(80);
+ await expect.poll(async()=>(await page.locator('.main-area').boundingBox())!.width).toBeGreaterThan(before.width);
+ await page.getByRole('button',{name:'Colaboradores',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Pessoas que fazem acontecer.'})).toBeVisible();
+ await page.reload();
+ await expect(page.getByRole('button',{name:'Expandir menu lateral'})).toBeVisible();
+ await expect.poll(async()=>(await sidebar.boundingBox())?.width).toBe(80);
+ await page.screenshot({path:'/tmp/escala-sidebar-collapsed.png',fullPage:true});
+ await page.getByRole('button',{name:'Expandir menu lateral'}).click();
+ await expect.poll(async()=>(await sidebar.boundingBox())?.width).toBe(248);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  const response=await page.request.post('/api/validate',{data:{shifts:[],employees:[],rules:{}}});expect(response.status()).toBe(400);
  await page.screenshot({path:'/tmp/escala-desktop.png',fullPage:true});
