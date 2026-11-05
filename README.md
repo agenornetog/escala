@@ -26,6 +26,7 @@ npm start
 
 - Escala semanal e mês civil completo (28, 29, 30 ou 31 dias), navegação entre períodos e filtro de equipe.
 - Cadastro de colaboradores, criação, edição e exclusão de turnos.
+- Geração mensal com prévia, regras gerais/individuais, cobertura e preservação dos lançamentos existentes.
 - Validação compartilhada entre navegador e `POST /api/validate`; alterações na escala passam pela API antes de persistir.
 - Bloqueio de sobreposição, intervalo interjornada, limites diário/semanal, intervalos intrajornada, dias consecutivos, descanso combinado entre turnos conhecidos e revezamento de domingos por colaborador. Aviso próximo ao limite semanal.
 - Configuração dos parâmetros e revalidação de todos os turnos ao alterar regras.
@@ -190,3 +191,24 @@ Nunca use prefixo `NEXT_PUBLIC_` nestas variáveis nem versione as chaves. Use p
 ### Verificação da integração
 
 `npm test` inclui testes reais do SQL em PostgreSQL embarcado (PGlite), permissões, publicação, isolamento por identidade, hash, revogação, limite compartilhado e falhas de configuração. `npm run build && npm run test:e2e` inclui um quarto servidor isolado na porta 3108, cujo transporte REST Supabase é substituído **somente no processo de teste** por esse banco em memória. Os testes verificam o fluxo do gestor e do colaborador em contextos de navegador separados. Não usam chaves ou banco de produção e não substituem a conferência final após configurar o projeto Supabase real.
+
+## Gerador automático de escala mensal
+
+Em **Escalas → Gerar escala**, escolha o mês, o horário de entrada, a meta diária, os dias de operação e as pessoas participantes. Os valores iniciais vêm da meta de cobertura da empresa e dos perfis atuais. A lista mostra os limites efetivos de cada colaborador, incluindo os ajustes individuais.
+
+- **Distribuir jornadas da equipe** busca cobrir a demanda e distribuir os demais turnos conforme preferências alternadas de trabalho/descanso dos regimes 5x2 e 6x1. **Preencher cobertura mínima** acrescenta somente as pessoas necessárias para a meta diária, considerando os turnos já existentes da seleção. Cobertura significa pessoas com algum trabalho no dia, sem dimensionamento por faixa horária ou cargo.
+- A duração remunerada sugerida é o menor valor entre o limite diário e o limite semanal dividido por cinco ou seis dias, arredondado para baixo em minutos. Por exemplo: 8h/dia e 44h/semana em 5x2 geram turnos de 8h; 6h/dia e 30h/semana geram turnos de 6h; 6x1 com limite semanal de 44h gera turnos de 7h20. O intervalo é somado à presença: acima de 6h usa o intervalo do perfil; entre 4h e 6h, 15 minutos; até 4h, sem intervalo obrigatório neste modelo.
+- As configurações de acordo/CCT, limite semanal, intervalo interjornada, descanso semanal combinado, sequência máxima e revezamento de domingos são conferidas pelo mesmo motor usado nas alterações manuais. A geração também limita a cinco ou seis **datas com trabalho por janela móvel de sete dias**, como restrição adicional conservadora do regime. Os limites são máximos: não garante preencher a carga contratual integral.
+- **Nenhum turno ou folga já cadastrado é removido ou substituído**, inclusive em feriados ou dias de operação desmarcados. Colaboradores fora da seleção, solicitações de troca e outros meses são preservados. Dias sem trabalho da seleção recebem propostas explícitas de folga; continuações de turno noturno não recebem folga conflitante.
+- A opção de feriados vem marcada. Ela impede novos turnos nos feriados cadastrados aplicáveis à UF/município do workspace, sem interpretar automaticamente a legislação/CCT nem alterar turnos já lançados. Desmarque se a operação precisar funcionar nessas datas e revise a autorização e os adicionais aplicáveis fora deste MVP.
+- O algoritmo consulta até 35 dias antes/depois do mês para testar candidatos, abrangendo semanas parciais, turnos noturnos existentes e revezamento de domingos na virada. A verificação inicial e final usa **todos os lançamentos cadastrados**; conflitos existentes bloqueiam a geração. Histórico não cadastrado não pode ser considerado.
+
+Clique em **Gerar prévia** para consultar novos turnos/folgas, totais por pessoa, cobertura de cada data e alertas do validador. A geração ocorre em um Web Worker local e não grava dados enquanto você revisa. Modificar qualquer parâmetro invalida a prévia anterior. É possível cancelar a execução ou descartar o resultado.
+
+Se faltar cobertura, a prévia mostra quantas alocações de pessoa/dia faltam e as restrições encontradas. **Aplicar escala do mês** só fica disponível após reconhecer explicitamente que está aplicando uma sugestão parcial. Regras de jornada não são flexibilizadas para cobrir a demanda. A busca reserva primeiro a cobertura de todo o mês e só depois acrescenta turnos, preservando as reservas futuras. É heurística, determinística e limitada a tentativas alternadas; um déficit não prova inviabilidade matemática nem representa uma solução ótima.
+
+Ao aplicar, o painel verifica se os dados mudaram desde a geração e envia o planejamento completo para `POST /api/validate`. Só grava se o servidor aceitar, e abre o mês gerado na escala. A persistência continua local ao navegador. Para compartilhar o resultado no portal individual, use depois **Colaboradores → Acesso → Salvar acesso e publicar jornada**; não há publicação automática.
+
+Nesta versão o gerador atende workspaces com até 100 colaboradores e 10.000 turnos/folgas, somente os regimes 5x2/6x1 do cadastro. Novos turnos usam uma entrada comum e devem terminar no mesmo dia ou exatamente à meia-noite; entradas que excedam esse limite são recusadas. Turnos noturnos existentes são preservados e avaliados, com as limitações de hora noturna e atribuição semanal já descritas. Não substitui a revisão operacional/trabalhista nem certifica conformidade integral com a CLT/CCT.
+
+`tests/schedule-generator.test.ts` cobre perfis gerais e individuais, intervalos, folgas, domingos, histórico anterior/posterior, preservação, dias de operação, feriados, cobertura parcial, anos bissextos, IDs e conclusão idempotente. `tests/browser/generator.spec.ts` verifica prévia sem alteração de dados, uso dos limites individuais, aceite de cobertura parcial, invalidação após edição, descarte, rejeição pelo servidor, persistência e layout móvel.
