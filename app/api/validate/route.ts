@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { loginRequired } from '@/lib/access';
-import { authenticated } from '@/lib/auth';
+import { cookieFromRequest, authenticated } from '@/lib/auth';
+import { isEmployeeToken } from '@/lib/employee-session';
 import { validate } from '@/lib/validation';
 import { ruleLimitKeys, ruleRanges, validRuleValue } from '@/lib/rule-profile';
 import type { DayOff, Employee, Rules, Shift } from '@/lib/types';
 function validDate(value: unknown): value is string { return typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(value+'T12:00Z').toISOString().slice(0,10)===value; }
 export async function POST(request: Request) {
+ if(isEmployeeToken(cookieFromRequest(request)))return NextResponse.json({error:'Acesso de colaborador é somente leitura.'},{status:403,headers:{'Cache-Control':'no-store'}});
  if (loginRequired() && !authenticated(request)) return NextResponse.json({error: 'Sua sessão expirou. Entre novamente.'}, {status:401, headers:{'Cache-Control':'no-store'}});
  try {
   const data=await request.json();

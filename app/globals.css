@@ -553,3 +553,22 @@ form:not(:has(.individual-toggle input:checked)) .individual-fields { display: n
 @media(max-width:920px){ .holiday-location { grid-template-columns: 1fr; gap: 24px; } .holiday-filters .search-input { margin-left: 0; } }
 @media(max-width:720px){ .holiday-stats { gap: 10px; } .holiday-stats .stat-top { font-size: 11px; min-height: 32px; } .holiday-stats .stat-card { padding: 15px 12px; } .holiday-stats .stat-note { font-size: 9px; } .holiday-filters .search-input { width: 100%; } .holiday-location .form-grid { grid-template-columns: 1fr; } }
 .holiday-storage-note { font-size: 11px; color: var(--fog); margin-top: 18px; line-height: 1.7; }
+
+/* Individual, read-only collaborator view. */
+.employee-shell{min-height:100vh;background:var(--background,#f5f5f4)}
+.employee-header{display:flex;align-items:center;gap:20px;padding:20px 5%;border-bottom:1px solid #d1dee8;background:#fff}
+.employee-header>.pill{margin-left:auto}
+.employee-portal{max-width:1050px;margin:0 auto;padding:40px 24px}
+.employee-month .panel-title h2,.employee-month-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.employee-month .panel-title{gap:20px;flex-wrap:wrap}
+.employee-totals{display:flex;gap:24px;flex-wrap:wrap;padding:20px 0;border-bottom:1px solid #d1dee8;font-size:13px;color:#7c7671}
+.employee-totals strong{font-size:22px;color:#111;margin-right:5px}
+.employee-day-list{list-style:none;padding:0;margin:0}
+.employee-day{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;padding:18px 0;border-bottom:1px solid #d1dee8}
+.employee-day-date{display:flex;flex-direction:column;gap:5px;font-size:13px}
+.employee-day-date strong{font-size:17px}.employee-day-date span{color:#7c7671}
+.employee-day-work p{margin:8px 0 0;font-size:14px}.employee-day-work small{color:#7c7671}
+.employee-day.working .pill{background:#eaf0ff;color:#164ecc}.employee-day.off .pill{background:#e7f4e9;color:#28734c}.employee-day.conflict .pill{background:#fff1e5;color:#9c541c}
+.employee-day.current-day{border-left:3px solid #165dfb;padding-left:12px}
+.employee-holiday{display:flex;align-items:center;gap:6px;color:#7c7671;overflow-wrap:anywhere}
+@media(max-width:600px){.employee-header{padding:16px;gap:10px}.employee-header>.pill{font-size:10px}.employee-header .btn{padding:10px}.employee-portal{padding:24px 16px}.employee-day{grid-template-columns:100px minmax(0,1fr);gap:12px}.employee-day-date span{font-size:11px}.employee-totals{gap:12px}.employee-totals span{font-size:11px}.employee-month-actions .btn{font-size:12px;padding:10px}.person-bottom{flex-wrap:wrap;gap:10px}}

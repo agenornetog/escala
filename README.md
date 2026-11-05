@@ -35,11 +35,11 @@ npm start
 
 ## Limites do MVP
 
-O armazenamento é **local ao navegador**, com login de administrador único, sem compartilhamento ou banco conectado. Não use dados pessoais reais em um dispositivo compartilhado. A API é um validador sem persistência; o cliente envia o planejamento inteiro. Quando ativado, o login protege as rotas, mas não criptografa nem remove o localStorage no logout. Os dados locais continuam no dispositivo e não há isolamento entre contas. Não constitui uma solução multiusuário.
+O planejamento do gestor continua **local ao navegador**, com login de administrador único. O acesso individual opcional dos colaboradores usa publicação de cópias individuais em um banco Supabase compartilhado, conforme a seção de configuração abaixo. Sem essa configuração, nenhum acesso de colaborador é criado. Não use dados pessoais reais em um dispositivo compartilhado. A API de validação não persiste o planejamento; o cliente envia a escala inteira para validar. Apenas a publicação individual usa o banco compartilhado. Quando ativado, o login protege as rotas, mas não criptografa nem remove o localStorage no logout. Os dados locais continuam no dispositivo. A área do colaborador não lê esse localStorage: recebe apenas sua própria jornada pelo servidor. O painel de gestão ainda não tem persistência compartilhada nem múltiplos gestores/empresas.
 
 Os perfis 5x2 e 6x1 limitam a sequência a cinco ou seis períodos de trabalho sem descanso semanal completo, respectivamente. Não são geradores nem prova de cumprimento de todas as folgas do regime, particularmente das duas folgas do 5x2. Os bloqueios usam os parâmetros configurados, sem interpretação automática da legislação ou CCT. A validação só conhece os turnos fornecidos; não certifica DSR em períodos incompletos. O descanso semanal combinado é verificado entre períodos conhecidos ao atingir o máximo de períodos sem descanso completo; histórico incompleto continua sendo uma limitação explícita. Intervalos de refeições são descontados em minutos; não há posição exata da pausa. Horas de turnos que atravessam meia-noite são atribuídas à data de entrada para totais diário e semanal. Um turno noturno conta como um período na sequência, enquanto todos os dias alcançados entram na análise dos domingos. Horários usam o fuso fixo UTC−03:00, adequado a Brasília nas datas atuais, sem histórico de horário de verão.
 
-Não cobre 12x36, feriados, banco de horas, adicionais, hora noturna reduzida, horas extras autorizadas, múltiplos vínculos ou integração de ponto. Valores sugeridos devem ser revisados pelo responsável trabalhista conforme categoria e CCT. A cobertura é uma contagem diária de pessoas, sem checagem por faixa horária ou cargo. O modo mensal mostra do primeiro ao último dia do mês civil. WhatsApp e notificações externas não estão conectados.
+Não cobre 12x36, cálculo de adicionais/compensações em feriados, banco de horas, adicionais, hora noturna reduzida, horas extras autorizadas, múltiplos vínculos ou integração de ponto. Valores sugeridos devem ser revisados pelo responsável trabalhista conforme categoria e CCT. A cobertura é uma contagem diária de pessoas, sem checagem por faixa horária ou cargo. O modo mensal mostra do primeiro ao último dia do mês civil. WhatsApp e notificações externas não estão conectados.
 
 ## Evolução para Supabase
 
@@ -69,7 +69,7 @@ A interface segue a referência visual Pastel enviada pelo usuário: fundo Paper
 
 ## Login de administrador
 
-Quando a proteção está ativa ou a janela pública expirou, `/login` é a entrada do sistema e a raiz/API de validação exigem uma sessão válida. Durante a janela pública autorizada, `/login` redireciona diretamente ao painel. O usuário configura o próprio e-mail e senha; não existe senha padrão nem cadastro público.
+Quando a proteção está ativa ou a janela pública expirou, `/login` é a entrada do sistema e a raiz/API de validação exigem uma sessão válida. Durante a janela pública autorizada, a raiz continua aberta para demonstração; `/login` permanece disponível para autenticar administradores e colaboradores. O usuário configura o próprio e-mail e senha; não existe senha padrão nem cadastro público.
 
 Execute `npm run auth:setup` em terminal interativo. O comando solicita o e-mail, uma senha de 12 a 256 caracteres (sem eco no terminal) e sua confirmação. Gera hash scrypt com salt e um segredo aleatório, preserva outras variáveis de `.env.local` e pede confirmação antes de substituir um acesso existente. A senha original não é salva. Reinicie o servidor após configurar.
 
@@ -81,9 +81,9 @@ As variáveis privadas de servidor são:
 
 Para hospedagem, registre esses valores nas configurações privadas do serviço e faça novo deploy. Em arquivos `.env`, o Next.js expande `$`; o setup já grava os sinais como `\$`. No painel da hospedagem use o hash original com `$`, sem barras de escape ou aspas. Nunca use prefixo `NEXT_PUBLIC_`, versione `.env.local` ou envie credenciais pelo chat.
 
-Sessão assinada de oito horas em cookie HttpOnly, SameSite=Lax e Secure em domínios públicos; HTTP é permitido apenas em loopback para desenvolvimento/testes. Login e logout verificam a origem da requisição. Há limite de 20 tentativas por 15 minutos por instância do servidor. A limitação não é distribuída: implantações com múltiplas instâncias devem usar um provedor de autenticação/limiter compartilhado antes de ampliar o acesso.
+Sessão assinada de oito horas em cookie HttpOnly, SameSite=Lax e Secure em domínios públicos; HTTP é permitido apenas em loopback para desenvolvimento/testes. Login e logout verificam a origem da requisição. Há limite de 20 tentativas por conta a cada 15 minutos por instância do servidor, com quantidade de contas em memória limitada. Para colaboradores há também uma limitação por conta compartilhada e atômica no PostgreSQL. O limite adicional do administrador ainda é local por instância.
 
-O logout remove o cookie deste navegador. Sessões são sem estado: uma cópia de um token permanece válida até expirar ou até trocar a senha/e-mail/segredo. A troca de qualquer configuração invalida as sessões anteriores. Não há recuperação por e-mail, MFA, perfis por colaborador ou revogação individual; para a operação multiempresa, a evolução indicada continua sendo Supabase Auth e persistência com RLS.
+O logout remove o cookie deste navegador. Sessões são sem estado: uma cópia de um token permanece válida até expirar ou até trocar a senha/e-mail/segredo. A troca de qualquer configuração invalida as sessões anteriores. Para colaboradores, cada requisição autenticada também verifica o cadastro no banco: desativação, troca de e-mail ou de senha invalidam sessões anteriores. Não há recuperação por e-mail ou MFA; para a operação multiempresa, a evolução indicada continua sendo Supabase Auth e persistência com RLS.
 
 Os testes usam exclusivamente uma identidade fictícia declarada em `tests/auth-fixture.ts`, injetada apenas no servidor autenticado isolado do Playwright (porta 3105). Um segundo servidor na porta 3106 valida a instalação ainda sem credenciais. Esses valores não são padrões da aplicação e não devem ser usados em produção.
 
@@ -150,3 +150,43 @@ Em **Localidade do workspace**, selecione a UF e, se necessário, o município. 
 Datas aplicáveis recebem um marcador na escala e um asterisco no PDF mensal. O PDF inclui uma listagem dos feriados considerados, com abrangência, localidade e referência. A sinalização não cria folga, não bloqueia turnos automaticamente e não calcula adicionais ou compensações. Essas decisões dependem do enquadramento e da norma aplicável.
 
 O cadastro e a localidade são salvos no mesmo localStorage do workspace, sem conexão a um banco compartilhado. Dados antigos sem `holidays` ou `workspaceLocation` continuam compatíveis. O armazenamento e a autenticação mantêm os limites já descritos neste README.
+
+
+## Acesso individual do colaborador (integração opcional)
+
+Na seção **Colaboradores**, o botão **Acesso** abre o cadastro de e-mail, senha e permissão de consulta. A conta do administrador é obrigatória para criar, publicar ou desativar acessos, inclusive durante a demonstração pública. A instalação ainda precisa de um projeto Supabase: as variáveis não estão configuradas neste repositório e nenhum banco de produção foi criado ou alterado por esta entrega.
+
+### Ativar na Vercel
+
+1. Crie um projeto no [Supabase](https://supabase.com/dashboard). No SQL Editor, revise e execute [supabase/employee-access.sql](supabase/employee-access.sql) **uma vez**. Este SQL é independente da proposta `supabase/schema.sql`; não precisa aplicar a proposta para ativar esta funcionalidade.
+2. Em **Vercel → Project → Settings → Environment Variables**, configure, no ambiente utilizado:
+
+   | Variável privada | Valor |
+   | --- | --- |
+   | `SUPABASE_URL` | URL HTTPS do projeto, como `https://SEU-PROJETO.supabase.co` |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Chave **service_role** do projeto, disponível nas configurações de API do Supabase |
+   | `ESCALA_WORKSPACE_ID` | Identificador estável desta instalação, como `escala-minha-empresa-prod` (letras, números, hífen ou sublinhado; até 100 caracteres) |
+   | `ESCALA_SESSION_SECRET` | Segredo aleatório de pelo menos 32 caracteres, já usado no login do administrador |
+   | `ESCALA_ADMIN_EMAIL` | E-mail real do gestor, diferente dos e-mails dos colaboradores |
+   | `ESCALA_ADMIN_PASSWORD` | Senha privada do gestor, de 12 a 256 caracteres; alternativamente use `ESCALA_ADMIN_PASSWORD_HASH`, conforme a seção de login |
+   | `ESCALA_REQUIRE_LOGIN` | `true`, para encerrar a demonstração aberta antes de compartilhar o sistema com pessoas reais |
+
+3. Faça um novo deploy para carregar as variáveis. Abra `/login` e entre com a conta do gestor. A área **Colaboradores → Acesso** mostra uma mensagem de configuração pendente enquanto o banco não estiver configurado; não inventa uma conta de teste.
+4. Abra **Acesso** no cartão do colaborador, defina e-mail e senha de pelo menos 12 caracteres e clique em **Salvar acesso e publicar jornada**. Compartilhe diretamente com a pessoa o endereço `https://SEU-SITE/login`, o e-mail e a senha. O sistema não envia e-mails ou WhatsApp.
+5. O colaborador entra pela mesma tela de login e é direcionado a `/colaborador`, onde consulta apenas seus dias, horários, intervalos, folgas confirmadas e feriados aplicáveis. Pode navegar pelos meses e atualizar a consulta. Dias sem planejamento continuam distintos de folga.
+
+Nunca use prefixo `NEXT_PUBLIC_` nestas variáveis nem versione as chaves. Use projetos ou identificadores de workspace diferentes para produção e preview/testes; não altere o identificador em produção depois de criar as contas. O projeto Supabase deve permitir o acesso HTTPS do servidor Vercel.
+
+### Publicação, alterações e desativação
+
+- O painel do gestor continua salvando o planejamento neste navegador. **Editar um turno não atualiza automaticamente a consulta do colaborador.** Depois das alterações, volte a **Colaboradores → Acesso → Salvar acesso e publicar jornada**. A publicação substitui a cópia individual completa, incluindo a retirada de turnos ou folgas removidos. O portal informa a data da última publicação.
+- Deixe a nova senha em branco para manter a atual. Informe outra senha para redefinir e invalidar sessões anteriores. Não há recuperação automática de senha por e-mail.
+- Desmarque **Permitir acesso à jornada** e salve para desativar o acesso e invalidar as sessões. Reativar exige nova entrada. A publicação sem mudança de credenciais mantém as sessões ativas.
+- Nenhuma senha fica no localStorage nem volta nas respostas. O banco guarda apenas hash scrypt com sal aleatório. Os tokens do colaborador são assinados, duram oito horas, usam cookie HttpOnly e não são aceitos como sessão de administrador. A identidade vem do token; IDs enviados na URL não selecionam outro colaborador.
+- O servidor retorna uma lista explícita de campos da própria pessoa, turnos e folgas, filtrada pelo mês solicitado (incluindo continuação noturna do mês anterior). Não envia a equipe, regras internas, trocas, credenciais ou jornadas de colegas. A API da jornada é somente leitura; APIs de gestão exigem sessão do gestor e proteção de origem para escrita.
+- As tabelas e RPCs desta integração têm acesso negado aos papéis `anon` e `authenticated`. RLS fica habilitada sem políticas de acesso direto; somente o servidor usa `service_role`, sempre limitado ao `ESCALA_WORKSPACE_ID`. Não reutilize esta chave em aplicações cliente. A tabela de tentativas usa chaves derivadas do e-mail e janela atômica de 15 minutos.
+- A autenticação não apaga o planejamento previamente salvo no navegador por um gestor. Use perfis de navegador separados em dispositivos compartilhados. Esta integração atende uma instalação/gestor, sem transformar o restante do MVP em um SaaS multiempresa.
+
+### Verificação da integração
+
+`npm test` inclui testes reais do SQL em PostgreSQL embarcado (PGlite), permissões, publicação, isolamento por identidade, hash, revogação, limite compartilhado e falhas de configuração. `npm run build && npm run test:e2e` inclui um quarto servidor isolado na porta 3108, cujo transporte REST Supabase é substituído **somente no processo de teste** por esse banco em memória. Os testes verificam o fluxo do gestor e do colaborador em contextos de navegador separados. Não usam chaves ou banco de produção e não substituem a conferência final após configurar o projeto Supabase real.

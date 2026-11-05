@@ -3,7 +3,8 @@ import { OPEN_ACCESS_UNTIL } from '../../lib/access';
 test.use({baseURL:'http://127.0.0.1:3107'});
 test('bounded public access enters directly and validates shifts without a session',async({page})=>{
  test.skip(Date.now()>=Date.parse(OPEN_ACCESS_UNTIL),'A janela pública venceu; o bloqueio após o prazo é verificado no teste do proxy/API.');
- await page.goto('/login');await expect(page).toHaveURL('http://127.0.0.1:3107/');
+ await page.goto('/login');await expect(page.getByRole('heading',{name:'Bom ter você por aqui.'})).toBeVisible();
+ await page.getByRole('link',{name:'Continuar na demonstração'}).click();await expect(page).toHaveURL('http://127.0.0.1:3107/');
  await expect(page.getByRole('heading',{name:'Sua equipe, no ritmo certo.'})).toBeVisible();
  await expect(page.getByText('Acesso aberto para testes até',{exact:false})).toBeVisible();
  await expect(page.getByRole('button',{name:'Sair da conta'})).toHaveCount(0);

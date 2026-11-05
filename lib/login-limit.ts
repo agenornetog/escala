@@ -1,12 +1,11 @@
-// Single-admin MVP: bound attempts across this server instance, not by a spoofable header.
-// Multi-instance deployments need a shared limiter before adding more users.
-const WINDOW = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 20;
-let attempts = 0;
-let started = 0;
-export function allowLogin(now = Date.now()) {
-  if (now - started >= WINDOW) { started = now; attempts = 0; }
-  if (attempts >= MAX_ATTEMPTS) return false;
-  attempts++;
-  return true;
+// Bounds work per normalized account on this instance. Employee logins also use
+// the shared, atomic Supabase limiter so parallel Vercel instances share a limit.
+const WINDOW=15*60*1000,MAX_ATTEMPTS=20,MAX_BUCKETS=1000;
+const buckets=new Map<string,{attempts:number;started:number}>();
+export function allowLogin(account='admin',now=Date.now()){
+ for(const [key,value] of buckets)if(now-value.started>=WINDOW)buckets.delete(key);
+ const current=buckets.get(account);
+ if(current){if(current.attempts>=MAX_ATTEMPTS)return false;current.attempts++;return true;}
+ if(buckets.size>=MAX_BUCKETS)return false;
+ buckets.set(account,{attempts:1,started:now});return true;
 }
