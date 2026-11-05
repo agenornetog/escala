@@ -1,4 +1,5 @@
 import { addDays, monday } from './dates';
+import { workScheduleProblems } from './work-schedule';
 import { profileFor, profileProblems } from './rule-profile';
 import { interval, shiftTouchesDate } from './shift-time';
 export { interval } from './shift-time';
@@ -10,8 +11,9 @@ export function validate(shifts: Shift[], employees: Employee[], rules: Rules, d
   for (const employee of employees) {
     const profile=profileFor(employee,rules);
     const list = shifts.filter(s => s.employeeId === employee.id).sort((a,b) => interval(a).start - interval(b).start);
-    for(const problem of profileProblems(profile)) issues.push({code:'profile',severity:'error',employeeId:employee.id,date:list[0]?.date ?? '',message:problem});
-    if(profileProblems(profile).length) continue;
+    const problems=[...profileProblems(profile),...workScheduleProblems(employee,rules)];
+    for(const problem of problems) issues.push({code:'profile',severity:'error',employeeId:employee.id,date:list[0]?.date ?? '',message:problem});
+    if(problems.length) continue;
     for(const off of dayOffs.filter(off=>off.employeeId===employee.id)){if(list.some(shift=>shiftTouchesDate(shift,off.date)))issues.push({code:'day-off',severity:'error',employeeId:employee.id,date:off.date,message:'Folga confirmada coincide com trabalho nesta data, inclusive continuação de turno noturno. Ajuste o turno ou remova a folga.'});}
     const daily = new Map<string, number>(); const weeks = new Map<string, number>();
     list.forEach((s, index) => {

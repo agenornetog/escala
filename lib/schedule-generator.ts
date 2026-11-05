@@ -1,25 +1,20 @@
 import { addDays, monthDays, weekday } from './dates';
 import { holidaysOnDate } from './holidays';
-import { profileFor, profileProblems } from './rule-profile';
+import { workShiftTemplate } from './work-schedule';
 import { interval, shiftTouchesDate } from './shift-time';
 import { validate } from './validation';
 import type { DayOff, Employee, Issue, Shift, Store } from './types';
 
 export type GeneratorOptions={month:string;start:string;employeeIds:string[];coverage:number;weekdays:number[];restOnHolidays:boolean;allocation:'balanced'|'coverage'};
 export type GenerationDay={date:string;required:number;scheduled:number;missing:number;reasons:string[]};
-export type GenerationEmployee={id:string;name:string;regime:string;dailyLimit:number;weeklyLimit:number;start:string;end:string;breakMinutes:number;paidMinutes:number;newDays:number;totalDays:number;totalHours:number};
+export type GenerationEmployee={id:string;name:string;regime:string;dailyLimit:number;weeklyLimit:number;start:string;end:string;breakMinutes:number;paidMinutes:number;newDays:number;totalDays:number;totalHours:number;source:'individual'|'generation'};
 export type GenerationResult={options:GeneratorOptions;shifts:Shift[];dayOffs:DayOff[];daily:GenerationDay[];employees:GenerationEmployee[];issues:Issue[];missing:number};
 export class GenerationError extends Error {}
-const time=(minutes:number)=>`${String(Math.floor(minutes/60)%24).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
 const maximum=(employee:Employee)=>employee.regime==='5x2'?5:6;
 export function generatorTemplate(employee:Employee,store:Store,start:string){
- const profile=profileFor(employee,store.rules),problems=profileProblems(profile);
- if(problems.length)throw new GenerationError(`${employee.name}: ${problems.join(' ')}`);
- const paidMinutes=Math.min(Math.floor(profile.dailyHours*60),Math.floor(profile.weeklyHours*60/maximum(employee)));
- const breakMinutes=paidMinutes>360?profile.longBreakMinutes:paidMinutes>240?15:0;
- const [h,m]=start.split(':').map(Number),endMinutes=h*60+m+paidMinutes+breakMinutes;
- if(paidMinutes<1||endMinutes>1440)throw new GenerationError(`${employee.name}: a jornada calculada ultrapassa meia-noite. Escolha uma entrada mais cedo. O gerador cria turnos no mesmo dia, com término até 00:00; turnos noturnos existentes são preservados.`);
- return {start,end:time(endMinutes),breakMinutes,paidMinutes,dailyLimit:profile.dailyHours,weeklyLimit:profile.weeklyHours};
+ const template=workShiftTemplate(employee,store.rules,start);
+ if(template.paidMinutes<1||template.endsAfterMidnight)throw new GenerationError(`${employee.name}: o horário ${template.start}–${template.end} ultrapassa meia-noite. Escolha uma entrada mais cedo ou ajuste o horário habitual. O gerador cria turnos no mesmo dia, com término até 00:00; turnos noturnos existentes são preservados.`);
+ return template;
 }
 function workedDates(shifts:Shift[]){
  const dates=new Set<string>();

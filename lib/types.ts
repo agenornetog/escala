@@ -1,4 +1,5 @@
-export type Employee = { id: string; name: string; role: string; team: 'Campo' | 'Suporte' | 'Atendimento'; regime: '5x2' | '6x1'; color: string; sundayEvery: number; ruleOverrides?: Partial<Omit<RuleLimits, 'coverage'>>; agreementReference?: string };
+export type EmployeeWorkSchedule = { start:string; end?:string; breakMinutes?:number };
+export type Employee = { id: string; name: string; role: string; team: 'Campo' | 'Suporte' | 'Atendimento'; regime: '5x2' | '6x1'; color: string; sundayEvery: number; ruleOverrides?: Partial<Omit<RuleLimits, 'coverage'>>; agreementReference?: string; workSchedule?: EmployeeWorkSchedule };
 export type Shift = { id: string; employeeId: string; date: string; start: string; end: string; breakMinutes: number };
 export type DayOff = { id: string; employeeId: string; date: string };
 export type RuleLimits = { dailyHours: number; weeklyHours: number; intershiftHours: number; weeklyRestHours: number; maxConsecutiveDays: number; longBreakMinutes: number; coverage: number };

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { loginRequired } from '@/lib/access';
 import { cookieFromRequest, authenticated } from '@/lib/auth';
 import { isEmployeeToken } from '@/lib/employee-session';
+import { normalizeWorkSchedule } from '@/lib/work-schedule';
 import { validate } from '@/lib/validation';
 import { ruleLimitKeys, ruleRanges, validRuleValue } from '@/lib/rule-profile';
 import type { DayOff, Employee, Rules, Shift } from '@/lib/types';
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
   if(ruleLimitKeys.some(key=>!validRuleValue(key,rules[key])))throw new Error('invalid');
   if(rules.agreementReference!==undefined&&(typeof rules.agreementReference!=='string'||rules.agreementReference.length>500))throw new Error('invalid');
   for(const employee of employees){
+    if(employee.workSchedule!==undefined)normalizeWorkSchedule(employee.workSchedule);
     if(!['5x2','6x1'].includes(employee.regime))throw new Error('invalid');
     if(employee.agreementReference!==undefined&&(typeof employee.agreementReference!=='string'||employee.agreementReference.length>500))throw new Error('invalid');
     if(employee.ruleOverrides!==undefined){
