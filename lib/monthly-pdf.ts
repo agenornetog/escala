@@ -8,7 +8,7 @@ const names=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 // Formatting is kept explicit: a continuation is present on the following day,
 // while a shift ending exactly at midnight is absent from that following day.
 function matrixText(plan:DayPlan,date:string){
- if(plan.status==='off')return 'F';if(plan.status==='unplanned')return '?';
+ if(plan.status==='absent')return 'A';if(plan.status==='off')return 'F';if(plan.status==='unplanned')return '?';
  return (plan.status==='conflict'?'!\n':'')+plan.shifts.map(s=>s.date<date?`até\n${s.end}`:`${s.start}\n${s.end}${s.end<=s.start?'+1':''}`).join('\n');
 }
 export type PdfFonts={regular:string;bold:string};
@@ -31,10 +31,10 @@ export function createMonthlyPdf(report:MonthlyReport,fonts?:PdfFonts){
   doc.setFontSize(detailed?18:23);doc.setTextColor(...INK);doc.text(`${section} - ${report.label}`,margin,28);
   doc.setFontSize(9);doc.setTextColor(100);doc.text(`${report.team}  |  ${report.rows.length} colaborador(es)  |  ${report.dates[0]} a ${report.dates.at(-1)}`,margin,36);
   if(detailed){doc.setFontSize(8);doc.text(description,margin,44);return;}
-  doc.setFillColor(...PAPER);doc.roundedRect(margin,43,width-2*margin,16,2,2,'F');doc.setTextColor(...INK);doc.setFontSize(10);doc.text(`Totais por pessoa/dia: ${report.totals.working} em turno     Folgas confirmadas: ${report.totals.off}     Sem planejamento: ${report.totals.unplanned}`,margin+4,53);
-  doc.setFontSize(8);doc.setTextColor(100);doc.text('Horários = turno planejado  |  F = folga confirmada  |  ? = sem planejamento  |  +1 = término no dia seguinte  |  até = continuação do dia anterior',margin,66);
+  doc.setFillColor(...PAPER);doc.roundedRect(margin,43,width-2*margin,16,2,2,'F');doc.setTextColor(...INK);doc.setFontSize(10);doc.text(`Totais por pessoa/dia: ${report.totals.working} em turno     Folgas confirmadas: ${report.totals.off}     Ausências: ${report.totals.absent}     Sem planejamento: ${report.totals.unplanned}`,margin+4,53);
+  doc.setFontSize(8);doc.setTextColor(100);doc.text('Horários = turno planejado  |  F = folga confirmada  |  A = férias/afastamento/licença  |  ? = sem planejamento  |  +1 = término no dia seguinte  |  até = continuação do dia anterior',margin,66);
   doc.text('Escalado indica presença prevista. Dia sem turno não é automaticamente folga nem disponibilidade para convocação.',margin,72);
-  doc.text('Planejamento futuro; não é registro de ponto nem certificado de conformidade trabalhista. ! = conflito entre turno e folga. * = feriado cadastrado aplicável à localidade.',margin,78);
+  doc.text('Planejamento futuro; não é registro de ponto nem certificado de conformidade trabalhista. ! = conflito entre turno e folga/ausência. * = feriado cadastrado aplicável à localidade.',margin,78);
  }
  const width=doc.internal.pageSize.getWidth(), fixed=72, dayWidth=(width-margin*2-fixed)/report.dates.length;
  const holidayDays=new Set(report.holidayDates.map(day=>day.date));
@@ -42,9 +42,9 @@ export function createMonthlyPdf(report:MonthlyReport,fonts?:PdfFonts){
  report.dates.forEach((_,i)=>columns[i+1]={cellWidth:dayWidth});
  autoTable(doc,{
   startY:85,margin:{top:85,left:margin,right:margin,bottom:14},theme:'grid',
-  head:[['Colaborador / equipe',...report.dates.map(date=>`${date.slice(8)}${holidayDays.has(date)?'*':''}\n${names[weekday(date)]}`),'Dias\nT / F / ?']],
-  body:report.rows.length?report.rows.map(row=>[`${row.employee.name}\n${row.employee.team} · ${row.employee.regime}`,...row.plans.map((plan,i)=>matrixText(plan,report.dates[i])),`${row.working} / ${row.off} / ${row.unplanned}`]):[['Nenhum colaborador neste filtro',...report.dates.map(()=>''),'']],
-  foot:[['Cobertura diária\nT / F / ?',...report.daily.map(day=>`${day.scheduled.length}/${day.off.length}/${day.unplanned.length}`),'']],showFoot:'lastPage',
+  head:[['Colaborador / equipe',...report.dates.map(date=>`${date.slice(8)}${holidayDays.has(date)?'*':''}\n${names[weekday(date)]}`),'Dias\nT / F / A / ?']],
+  body:report.rows.length?report.rows.map(row=>[`${row.employee.name}\n${row.employee.team} · ${row.employee.regime}`,...row.plans.map((plan,i)=>matrixText(plan,report.dates[i])),`${row.working} / ${row.off} / ${row.absent} / ${row.unplanned}`]):[['Nenhum colaborador neste filtro',...report.dates.map(()=>''),'']],
+  foot:[['Cobertura diária\nT / F / A / ?',...report.daily.map(day=>`${day.scheduled.length}/${day.off.length}/${day.absent.length}/${day.unplanned.length}`),'']],showFoot:'lastPage',
   styles:{font,fontSize:6.6,cellPadding:{top:2,right:.7,bottom:2,left:.7},minCellHeight:12,halign:'center',valign:'middle',lineColor:LINE,lineWidth:.15,textColor:INK,overflow:'linebreak'},
   columnStyles:columns,headStyles:{fillColor:CHALK,textColor:INK,fontStyle:'bold',fontSize:7},footStyles:{fillColor:PAPER,textColor:INK,fontStyle:'normal',fontSize:6.5},rowPageBreak:'avoid',
   didParseCell(data){const index=data.column.index-1;if(index>=0&&index<report.dates.length&&isWeekend(report.dates[index]))data.cell.styles.fillColor=PAPER;if(data.section==='body'&&index>=0&&index<report.dates.length){const status=report.rows[data.row.index]?.plans[index].status;if(status==='off')data.cell.styles.fillColor=CHALK;if(status==='unplanned')data.cell.styles.textColor=[120,113,107];if(status==='conflict'){data.cell.styles.fillColor=CHALK;data.cell.styles.fontStyle='bold';}}},
@@ -54,8 +54,8 @@ export function createMonthlyPdf(report:MonthlyReport,fonts?:PdfFonts){
   doc.addPage('a4','landscape');
   autoTable(doc,{
    startY:51,margin:{top:51,left:margin,right:margin,bottom:14},theme:'grid',
-   head:[['Dia','Escalados / presença prevista','Folga confirmada','Sem planejamento']],
-   body:report.daily.map(day=>[`${labelDate(day.date,{day:'2-digit',month:'2-digit'})}${day.holidays.length?'*':''}\n${names[weekday(day.date)]}`,day.scheduled.length?day.scheduled.map(({employee,plan})=>`${employee.name}: ${plan.lines.join('; ')}${plan.status==='conflict'?' [CONFLITO COM FOLGA]':''}`).join('\n'):'Nenhum turno cadastrado',day.off.map(e=>e.name).join(', ')||'-',day.unplanned.map(e=>e.name).join(', ')||'-']),
+   head:[['Dia','Escalados / presença prevista','Folga / ausência cadastrada','Sem planejamento']],
+   body:report.daily.map(day=>[`${labelDate(day.date,{day:'2-digit',month:'2-digit'})}${day.holidays.length?'*':''}\n${names[weekday(day.date)]}`,day.scheduled.length?day.scheduled.map(({employee,plan})=>`${employee.name}: ${plan.lines.join('; ')}${plan.status==='conflict'?' [CONFLITO COM FOLGA/AUSÊNCIA]':''}`).join('\n'):'Nenhum turno cadastrado',[...day.off.map(e=>`${e.name} (folga)`),...day.absent.map(({employee,absence})=>`${employee.name} (${absence.kind==='ferias'?'férias':absence.kind==='licenca'?'licença':'afastamento'})`)].join(', ')||'-',day.unplanned.map(e=>e.name).join(', ')||'-']),
    styles:{font,fontSize:8,cellPadding:2,lineColor:LINE,lineWidth:.15,textColor:INK,valign:'top',overflow:'linebreak'},headStyles:{fillColor:CHALK,textColor:INK},columnStyles:{0:{cellWidth:17},1:{cellWidth:105},2:{cellWidth:69},3:{cellWidth:82}},rowPageBreak:'avoid',
    didDrawPage(){header('Detalhamento diário',true);}
   });

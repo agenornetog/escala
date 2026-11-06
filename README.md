@@ -225,3 +225,31 @@ Em **Colaboradores → Editar jornada → Horário habitual de trabalho**, marqu
 - É possível cadastrar horário noturno que termina no dia seguinte para preencher turnos manuais. O gerador mensal continua limitado a novos turnos que terminam no mesmo dia ou exatamente à meia-noite; não altera silenciosamente uma preferência noturna e informa quando ela ainda não é suportada na geração.
 
 A preferência fica nos dados locais do gestor. O portal do colaborador e o PDF continuam mostrando os **horários reais dos turnos planejados**, sem substituí-los pelo padrão. Para disponibilizar uma escala alterada ao colaborador, publique novamente a jornada no fluxo de acesso já descrito. Não é necessário executar SQL novo para esta funcionalidade.
+
+## Configuração da empresa, sindicato e revisão trabalhista
+
+A área **Revisão trabalhista** reúne a configuração da atividade, categoria, UF/município, instrumentos CCT/ACT, vínculos individuais e períodos de ausência. O catálogo de sindicatos é formado pelos instrumentos cadastrados pela própria empresa; não é um catálogo oficial nem determina o enquadramento a partir do CNPJ/cargo.
+
+1. Cadastre a atividade, categoria e localidade em **Configuração da empresa**.
+2. Use **Cadastrar instrumento** para informar sindicato/entidades signatárias, referência/registro, categoria, território e vigência reais da CCT/ACT. Cadastre cada versão como um instrumento separado. A URL da fonte deve usar HTTPS, sem credenciais.
+3. Transcreva os limites suportados e registre as cláusulas que os fundamentam. Informe a identificação do responsável e a data da conferência quando ela efetivamente tiver ocorrido. Preencher esses campos é uma declaração do administrador; o sistema não leu o documento nem certifica sua validade.
+4. Escolha **Sindicato e instrumento padrão** na empresa. Para categorias diferenciadas, use **Revisar** no enquadramento do colaborador para indicar outro instrumento e categoria. Confirme o perfil geral ou marque a necessidade de tratamento especial. Defina a frequência e registre o fundamento do revezamento de domingos (o mesmo parâmetro disponível em Editar jornada); regras por sexo, idade ou categoria não são deduzidas automaticamente.
+5. Consulte **Revisão do mês**. A matriz distingue regras verificadas, bloqueios encontrados e conferências pendentes. A exportação JSON registra uma fotografia técnica do planejamento, sem afirmar aprovação jurídica ou auditoria imutável.
+
+Os limites coletivos parametrizados **tornam o perfil mais restritivo**, respeitando os limites gerais e individuais já existentes. Não habilitam exceções para ampliar jornada ou reduzir descansos automaticamente. O validador local, a API e o gerador verificam duração diária/semanal, interjornada, intervalo, sequência/descanso e domingos informados no instrumento. Os lançamentos dentro da vigência são avaliados com as restrições coletivas; a revisão informa vigência insuficiente e divergência de categoria/território. Não há interpretação automática de ultratividade, substituição de instrumentos, conflitos CCT/ACT, categorias diferenciadas ou regras não representadas no modelo. Cadastro ou alteração de parâmetros que conflite com turnos já lançados é recusado: ajuste o planejamento antes de ativar a restrição.
+
+A regra **Trabalho em feriados → Vedado neste perfil** bloqueia trabalho nos feriados cadastrados aplicáveis à localidade, inclusive continuação noturna. Informar autorização exige referência de cláusula e **não** calcula remuneração ou compensação. A completude do calendário manual e a autorização legal/setorial permanecem pendentes de conferência.
+
+### Férias, afastamentos e licenças
+
+**Cadastrar ausência** registra apenas colaborador, tipo, início e fim inclusivos. Não informe diagnósticos, documentos médicos ou detalhes de saúde. São recusados períodos inválidos, sobrepostos ou de pessoas inexistentes. O período impede turnos manuais, aprovação de troca e novos turnos do gerador, incluindo trabalho que comece no dia anterior e avance sobre a ausência. Remova ou reagende turnos conflitantes antes de cadastrar o período.
+
+O gerador preserva a ausência e não a transforma em folga. A escala mostra Férias/Afastamento/Licença; o PDF usa **A**, separada de **F** e **?**, e a listagem diária identifica o tipo. Na publicação individual, somente as ausências da própria pessoa são incluídas no snapshot; metadados de sindicato, condições individuais e documentos não são enviados ao colaborador. Snapshots antigos sem ausências continuam compatíveis e precisam ser republicados para refletir novos períodos.
+
+Esse bloqueio não verifica aquisição/fracionamento de férias, início em relação a feriados/DSR ou todas as hipóteses de afastamento/licença. Não converta o registro em prova de concessão regular sem conferência.
+
+### Limites da revisão e ativação
+
+Não há selo de conformidade integral nem aprovação automática. A revisão mantém pendentes o enquadramento incompleto, instrumentos não conferidos, calendário manual, histórico sem classificação, posição da pausa, regras noturnas, divisão de horas entre semanas, compensações, regimes/condições especiais e demais cláusulas não implementadas quando aplicáveis. O gerador impede automação para pessoas marcadas como condição especial até que exista um perfil apropriado. O painel diferencia a ausência de conflitos de jornada da revisão trabalhista do mês.
+
+Enquanto o planejamento permanecer local, a API valida o contexto enviado pelo gestor; a configuração normativa ainda não é uma fonte persistida e imutável no servidor. As configurações permanecem no localStorage; não foi criado banco de produção nem se concluiu a migração multiempresa. Campos opcionais `labor`/`absences` e o vínculo individual preservam dados antigos da versão 1. A API valida esses campos e aceita `reviewMonth` para devolver a avaliação mensal calculada no servidor com os mesmos dados. A consulta ao texto consolidado oficial em 06/11/2026 foi recusada pelo proxy HTTP 403; as referências normativas continuam sujeitas à confirmação nas fontes oficiais e no instrumento efetivo. Veja também `docs/auditoria-clt.md`.

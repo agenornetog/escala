@@ -1,11 +1,12 @@
 import { addDays, monday } from './dates';
+import { laborContextIssues } from './labor-rules';
 import { workScheduleProblems } from './work-schedule';
 import { profileFor, profileProblems } from './rule-profile';
 import { interval, shiftTouchesDate } from './shift-time';
 export { interval } from './shift-time';
-import type { DayOff, Employee, Issue, Rules, Shift } from './types';
+import type { DayOff, Employee, Issue, LaborContext, Rules, Shift } from './types';
 export const defaultRules: Rules = { dailyHours: 8, weeklyHours: 44, intershiftHours: 11, weeklyRestHours: 35, maxConsecutiveDays: 6, longBreakMinutes: 60, coverage: 4 };
-export function validate(shifts: Shift[], employees: Employee[], rules: Rules, dayOffs: DayOff[]=[]): Issue[] {
+export function validate(shifts: Shift[], employees: Employee[], rules: Rules, dayOffs: DayOff[]=[],context:LaborContext={}): Issue[] {
   const issues: Issue[] = [];
   const push = (code: string, severity: Issue['severity'], s: Shift, message: string) => issues.push({ code, severity, employeeId: s.employeeId, date: s.date, message });
   for (const employee of employees) {
@@ -74,6 +75,6 @@ export function validate(shifts: Shift[], employees: Employee[], rules: Rules, d
       if (consecutiveSundays >= employee.sundayEvery) push('sunday','error',list.find(s=>s.date===date) ?? list.find(s=>addDays(s.date,1)===date)!,`Revezamento de domingos do perfil excedido: este perfil exige 1 domingo livre a cada ${employee.sundayEvery} semanas.`);
     }
   }
-  return issues;
+  return [...issues,...laborContextIssues(shifts,employees,rules,context)];
 }
 export function blockingIssues(shifts: Shift[], employees: Employee[], rules: Rules) { return validate(shifts,employees,rules).filter(i=>i.severity==='error'); }

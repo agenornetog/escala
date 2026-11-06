@@ -53,3 +53,13 @@ Não foi fornecida uma CCT específica. O usuário solicitou configuração de j
 - Submeter as regras e os instrumentos ao responsável trabalhista antes de tratar resultados como aprovação da escala.
 
 A conclusão desta revisão é que o sistema oferece verificações úteis de planejamento, mas **ainda não atende nem comprova todas as exigências da CLT**. Os pontos pendentes ficam explícitos para que uma tela sem alertas não seja interpretada como garantia jurídica.
+
+## Atualização técnica em 06/11/2026 — configuração sindical e revisão
+
+Foi implementado cadastro de atividade/categoria/localidade, sindicatos e versões de CCT/ACT com território, vigência, cláusulas parametrizadas, fonte HTTPS e conferência declarada. A empresa escolhe um instrumento padrão; o colaborador pode ter instrumento/categoria próprios. O vínculo não determina enquadramento sindical nem comprova validade do documento. Não houve fornecimento de uma CCT real nesta etapa: o usuário optou por configurar cada empresa no produto.
+
+Foram acrescentadas restrições coletivas conservadoras de jornada/descansos, domingos e vedação de feriados, com validação local, servidor e geração. Não se relaxam mínimos gerais ou limites individuais automaticamente. O cadastro de férias/afastamentos/licenças impede trabalho no período, inclusive continuação noturna; períodos são mostrados separadamente de folga no calendário, PDF e snapshot individual. Condições especiais são explicitadas como não automatizadas.
+
+A revisão mensal apresenta verificações concluídas, bloqueios e pendências. Vigência insuficiente, categoria/localidade divergentes, falta de instrumentos/cláusulas/fonte/conferência e histórico incompleto não são exibidos como aprovação. A matriz preserva as limitações de pausa sem posição temporal, trabalho noturno, cruzamento semanal, remuneração/compensação, concessão de férias e demais obrigações ainda não modeladas. A resposta continua com `certified: false` e não substitui análise da CCT/ACT.
+
+Nova tentativa de leitura de `https://www.planalto.gov.br/ccivil_03/decreto-lei/del5452.htm` nesta data retornou `CONNECT tunnel failed, response 403`. Não foi contornada a política de rede, e não se afirma ter conferido o texto vigente. Os artigos na matriz anterior permanecem referências indicativas. Configurações e revisões são locais, sem trilha imutável ou conclusão da arquitetura SaaS multiempresa.

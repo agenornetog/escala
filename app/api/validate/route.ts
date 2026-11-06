@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { loginRequired } from '@/lib/access';
 import { cookieFromRequest, authenticated } from '@/lib/auth';
 import { isEmployeeToken } from '@/lib/employee-session';
+import { assessLabor } from '@/lib/labor-assessment';
+import { normalizeLabor, normalizeAbsences } from '@/lib/labor-rules';
+import { normalizeHoliday, normalizeLocation } from '@/lib/holidays';
 import { normalizeWorkSchedule } from '@/lib/work-schedule';
 import { validate } from '@/lib/validation';
 import { ruleLimitKeys, ruleRanges, validRuleValue } from '@/lib/rule-profile';
@@ -20,6 +23,10 @@ export async function POST(request: Request) {
   if(ruleLimitKeys.some(key=>!validRuleValue(key,rules[key])))throw new Error('invalid');
   if(rules.agreementReference!==undefined&&(typeof rules.agreementReference!=='string'||rules.agreementReference.length>500))throw new Error('invalid');
   for(const employee of employees){
+    if(employee.laborInstrumentId!==undefined&&(typeof employee.laborInstrumentId!=='string'||employee.laborInstrumentId.length>120))throw new Error('invalid');
+    if(employee.laborCategory!==undefined&&(typeof employee.laborCategory!=='string'||employee.laborCategory.length>150))throw new Error('invalid');
+    if(employee.sundayReference!==undefined&&(typeof employee.sundayReference!=='string'||employee.sundayReference.length>500))throw new Error('invalid');
+    if(employee.laborCondition!==undefined&&!['general','special'].includes(employee.laborCondition))throw new Error('invalid');
     if(employee.workSchedule!==undefined)normalizeWorkSchedule(employee.workSchedule);
     if(!['5x2','6x1'].includes(employee.regime))throw new Error('invalid');
     if(employee.agreementReference!==undefined&&(typeof employee.agreementReference!=='string'||employee.agreementReference.length>500))throw new Error('invalid');
@@ -33,7 +40,13 @@ export async function POST(request: Request) {
   }
   const dayOffs=(data.dayOffs??[]) as DayOff[];
   if(!Array.isArray(dayOffs)||dayOffs.length>100000||dayOffs.some(off=>typeof off.id!=='string'||!ids.has(off.employeeId)||!validDate(off.date))||new Set(dayOffs.map(off=>off.id)).size!==dayOffs.length||new Set(dayOffs.map(off=>`${off.employeeId}/${off.date}`)).size!==dayOffs.length)throw new Error('invalid');
-  const issues=validate(shifts,employees,rules,dayOffs);
-  return NextResponse.json({valid:!issues.some(i=>i.severity==='error'),issues,compliance:{certified:false,scope:'configured-planning-rules',pending:['CCT e enquadramento individual','Histórico completo e DSR','Adicionais e hora noturna','Limites semanais em turnos que atravessam a semana']}});
+  const labor=normalizeLabor(data.labor),workspaceLocation=normalizeLocation(data.workspaceLocation);
+  const absences=normalizeAbsences(data.absences,ids);
+  if(data.holidays!==undefined&&(!Array.isArray(data.holidays)||data.holidays.length>2000))throw new Error('invalid');
+  const holidays=(data.holidays??[]).map(normalizeHoliday);
+  if(employees.some(e=>e.laborInstrumentId&&!labor?.instruments.some(i=>i.id===e.laborInstrumentId)))throw new Error('invalid');
+  const issues=validate(shifts,employees,rules,dayOffs,{labor,absences,holidays,workspaceLocation});
+  const assessment=data.reviewMonth===undefined?undefined:assessLabor({version:1,employees,shifts,rules,swaps:[],dayOffs,labor,absences,holidays,workspaceLocation},data.reviewMonth);
+  return NextResponse.json({assessment,valid:!issues.some(i=>i.severity==='error'),issues,compliance:{certified:false,scope:'configured-planning-rules',pending:['CCT e enquadramento individual','Histórico completo e DSR','Adicionais e hora noturna','Limites semanais em turnos que atravessam a semana']}});
  } catch { return NextResponse.json({error:'Dados de escala inválidos. Confira os campos e tente novamente.'},{status:400}); }
 }

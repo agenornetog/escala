@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Colaboradores', icon: Users },
   { name: 'Feriados', icon: Flag },
   { name: 'Trocas de turno', icon: ArrowLeftRight },
+  { name: 'Revisão trabalhista', icon: ShieldCheck },
   { name: 'Regras e limites', icon: ShieldCheck },
 ];
 

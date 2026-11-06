@@ -1,5 +1,7 @@
 import { addDays, monthDays, weekday } from './dates';
 import { holidaysOnDate } from './holidays';
+import { employeeWithInstrument } from './labor-rules';
+import { assessLabor } from './labor-assessment';
 import { workShiftTemplate } from './work-schedule';
 import { interval, shiftTouchesDate } from './shift-time';
 import { validate } from './validation';
@@ -8,11 +10,11 @@ import type { DayOff, Employee, Issue, Shift, Store } from './types';
 export type GeneratorOptions={month:string;start:string;employeeIds:string[];coverage:number;weekdays:number[];restOnHolidays:boolean;allocation:'balanced'|'coverage'};
 export type GenerationDay={date:string;required:number;scheduled:number;missing:number;reasons:string[]};
 export type GenerationEmployee={id:string;name:string;regime:string;dailyLimit:number;weeklyLimit:number;start:string;end:string;breakMinutes:number;paidMinutes:number;newDays:number;totalDays:number;totalHours:number;source:'individual'|'generation'};
-export type GenerationResult={options:GeneratorOptions;shifts:Shift[];dayOffs:DayOff[];daily:GenerationDay[];employees:GenerationEmployee[];issues:Issue[];missing:number};
+export type GenerationResult={options:GeneratorOptions;shifts:Shift[];dayOffs:DayOff[];daily:GenerationDay[];employees:GenerationEmployee[];issues:Issue[];missing:number;laborReview:{label:string;blocked:number;pending:number}};
 export class GenerationError extends Error {}
 const maximum=(employee:Employee)=>employee.regime==='5x2'?5:6;
 export function generatorTemplate(employee:Employee,store:Store,start:string){
- const template=workShiftTemplate(employee,store.rules,start);
+ const template=workShiftTemplate(employeeWithInstrument(employee,store.rules,store),store.rules,start);
  if(template.paidMinutes<1||template.endsAfterMidnight)throw new GenerationError(`${employee.name}: o horário ${template.start}–${template.end} ultrapassa meia-noite. Escolha uma entrada mais cedo ou ajuste o horário habitual. O gerador cria turnos no mesmo dia, com término até 00:00; turnos noturnos existentes são preservados.`);
  return template;
 }
@@ -35,9 +37,10 @@ function assertOptions(store:Store,options:GeneratorOptions){
  monthDays(options.month);
  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(options.start)||!Number.isInteger(options.coverage)||options.coverage<1||options.coverage>100||!Array.isArray(options.weekdays)||!options.weekdays.length||options.weekdays.some(day=>!Number.isInteger(day)||day<0||day>6)||new Set(options.weekdays).size!==options.weekdays.length||typeof options.restOnHolidays!=='boolean'||!['balanced','coverage'].includes(options.allocation))throw new GenerationError('Confira a entrada, a cobertura e os dias de operação.');
  if(!Array.isArray(options.employeeIds)||!options.employeeIds.length||new Set(options.employeeIds).size!==options.employeeIds.length||options.employeeIds.some(id=>!store.employees.some(employee=>employee.id===id)))throw new GenerationError('Selecione ao menos um colaborador válido, sem duplicação.');
+ if(store.employees.some(e=>options.employeeIds.includes(e.id)&&e.laborCondition==='special'))throw new GenerationError('Há colaborador com condição ou regime especial. A geração exige um perfil específico, ainda não implementado. Planeje manualmente e submeta à revisão trabalhista.');
  if(store.employees.length>100||store.shifts.length>10000||(store.dayOffs?.length??0)>10000)throw new GenerationError('O gerador atende até 100 colaboradores e 10.000 turnos/folgas por workspace nesta versão.');
  if(new Set(store.shifts.map(s=>s.id)).size!==store.shifts.length||new Set(store.employees.map(e=>e.id)).size!==store.employees.length||store.employees.some(e=>!['5x2','6x1'].includes(e.regime)||![2,3].includes(e.sundayEvery)))throw new GenerationError('Confira os cadastros e as identificações da escala.');
- const errors=validate(store.shifts,store.employees,store.rules,store.dayOffs??[]).filter(issue=>issue.severity==='error');
+ const errors=validate(store.shifts,store.employees,store.rules,store.dayOffs??[],store).filter(issue=>issue.severity==='error');
  if(errors.length)throw new GenerationError(`Corrija os conflitos existentes antes de gerar: ${errors.slice(0,4).map(issue=>`${store.employees.find(e=>e.id===issue.employeeId)?.name}: ${issue.message}`).join(' ')}`);
 }
 export function generateMonthlySchedule(store:Store,options:GeneratorOptions):GenerationResult{
@@ -70,7 +73,7 @@ export function generateMonthlySchedule(store:Store,options:GeneratorOptions):Ge
     if(!fitsWeek(worked,date,maximum(employee))){reasons.add('Folgas do regime 5x2/6x1 em sete dias');continue;}
     const template=templates.get(id)!;
     const shift:Shift={id:`draft:${id}:${date}`,employeeId:id,date,start:template.start,end:template.end,breakMinutes:template.breakMinutes};
-    const errors=validate([...current,shift],[employee],store.rules,offByPerson.get(id)).filter(issue=>issue.severity==='error');
+    const errors=validate([...current,shift],[employee],store.rules,offByPerson.get(id),store).filter(issue=>issue.severity==='error');
     if(errors.length){for(const error of errors)reasons.add(error.message);continue;}
     current.push(shift);worked.add(date);loads.set(id,loads.get(id)!+template.paidMinutes/60);added.push(shift);scheduled++;
    }
@@ -86,7 +89,7 @@ export function generateMonthlySchedule(store:Store,options:GeneratorOptions):Ge
     const id=employee.id,current=personal.get(id)!,worked=occupied.get(id)!;
     if(worked.has(date)||offByPerson.get(id)!.some(off=>off.date===date)||!fitsWeek(worked,date,maximum(employee)))continue;
     const template=templates.get(id)!,shift:Shift={id:`draft:${id}:${date}`,employeeId:id,date,start:template.start,end:template.end,breakMinutes:template.breakMinutes};
-    if(validate([...current,shift],[employee],store.rules,offByPerson.get(id)).some(issue=>issue.severity==='error'))continue;
+    if(validate([...current,shift],[employee],store.rules,offByPerson.get(id),store).some(issue=>issue.severity==='error'))continue;
     current.push(shift);worked.add(date);loads.set(id,loads.get(id)!+template.paidMinutes/60);added.push(shift);daily[index].scheduled++;daily[index].missing=Math.max(0,daily[index].required-daily[index].scheduled);
    }
   }
@@ -104,9 +107,10 @@ export function generateMonthlySchedule(store:Store,options:GeneratorOptions):Ge
  function nextId(kind:string){let id;do{id=`auto-${kind}-${options.month}-${sequence++}`;}while(ids.has(id));ids.add(id);return id;}
  const shifts=best.added.map(shift=>({...shift,id:nextId('turno')}));
  const allShifts=[...store.shifts,...shifts],dayOffs:DayOff[]=[];
- for(const employee of employees){const worked=workedDates(allShifts.filter(s=>s.employeeId===employee.id));const confirmed=new Set((store.dayOffs??[]).filter(off=>off.employeeId===employee.id).map(off=>off.date));for(const date of dates)if(!worked.has(date)&&!confirmed.has(date))dayOffs.push({id:nextId('folga'),employeeId:employee.id,date});}
+ for(const employee of employees){const worked=workedDates(allShifts.filter(s=>s.employeeId===employee.id));const confirmed=new Set((store.dayOffs??[]).filter(off=>off.employeeId===employee.id).map(off=>off.date));for(const date of dates)if(!worked.has(date)&&!confirmed.has(date)&&!(store.absences??[]).some(a=>a.employeeId===employee.id&&a.startsOn<=date&&a.endsOn>=date))dayOffs.push({id:nextId('folga'),employeeId:employee.id,date});}
  if(allShifts.length>10000||(store.dayOffs?.length??0)+dayOffs.length>10000)throw new GenerationError('O planejamento resultante ultrapassa o limite de 10.000 turnos/folgas. Reduza a seleção ou reveja o volume do histórico.');
- const issues=validate(allShifts,store.employees,store.rules,[...store.dayOffs??[],...dayOffs]);
+ const issues=validate(allShifts,store.employees,store.rules,[...store.dayOffs??[],...dayOffs],store);
  if(issues.some(issue=>issue.severity==='error'))throw new GenerationError('A sugestão encontrou um conflito na verificação final. Nenhuma alteração foi aplicada. Revise o histórico e os parâmetros.');
- return {options:{...options,employeeIds:[...options.employeeIds],weekdays:[...options.weekdays]},shifts,dayOffs,daily:best.daily,missing:best.missing,issues,employees:employees.map(employee=>{const personal=allShifts.filter(s=>s.employeeId===employee.id&&s.date>=first&&s.date<=last);return {id:employee.id,name:employee.name,regime:employee.regime,...templates.get(employee.id)!,newDays:shifts.filter(s=>s.employeeId===employee.id).length,totalDays:dates.filter(date=>allShifts.some(s=>s.employeeId===employee.id&&shiftTouchesDate(s,date))).length,totalHours:personal.reduce((n,s)=>n+interval(s).hours,0)};})};
+ const review=assessLabor({...store,shifts:allShifts,dayOffs:[...store.dayOffs??[],...dayOffs]},options.month);
+ return {laborReview:{label:review.label,blocked:review.blocked,pending:review.pending},options:{...options,employeeIds:[...options.employeeIds],weekdays:[...options.weekdays]},shifts,dayOffs,daily:best.daily,missing:best.missing,issues,employees:employees.map(employee=>{const personal=allShifts.filter(s=>s.employeeId===employee.id&&s.date>=first&&s.date<=last);return {id:employee.id,name:employee.name,regime:employee.regime,...templates.get(employee.id)!,newDays:shifts.filter(s=>s.employeeId===employee.id).length,totalDays:dates.filter(date=>allShifts.some(s=>s.employeeId===employee.id&&shiftTouchesDate(s,date))).length,totalHours:personal.reduce((n,s)=>n+interval(s).hours,0)};})};
 }

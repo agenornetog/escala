@@ -1,5 +1,5 @@
 export type EmployeeWorkSchedule = { start:string; end?:string; breakMinutes?:number };
-export type Employee = { id: string; name: string; role: string; team: 'Campo' | 'Suporte' | 'Atendimento'; regime: '5x2' | '6x1'; color: string; sundayEvery: number; ruleOverrides?: Partial<Omit<RuleLimits, 'coverage'>>; agreementReference?: string; workSchedule?: EmployeeWorkSchedule };
+export type Employee = { id: string; name: string; role: string; team: 'Campo' | 'Suporte' | 'Atendimento'; regime: '5x2' | '6x1'; color: string; sundayEvery: number; ruleOverrides?: Partial<Omit<RuleLimits, 'coverage'>>; agreementReference?: string; workSchedule?: EmployeeWorkSchedule; laborInstrumentId?:string; laborCategory?:string; laborCondition?:'general'|'special'; sundayReference?:string };
 export type Shift = { id: string; employeeId: string; date: string; start: string; end: string; breakMinutes: number };
 export type DayOff = { id: string; employeeId: string; date: string };
 export type RuleLimits = { dailyHours: number; weeklyHours: number; intershiftHours: number; weeklyRestHours: number; maxConsecutiveDays: number; longBreakMinutes: number; coverage: number };
@@ -9,4 +9,8 @@ export type Swap = { id: string; fromShiftId: string; toShiftId: string; status:
 export type HolidayScope = 'nacional' | 'estadual' | 'municipal';
 export type WorkspaceLocation = { state: string; city?: string };
 export type Holiday = { id: string; name: string; date: string; scope: HolidayScope; state?: string; city?: string; annual: boolean; reference?: string; notes?: string };
-export type Store = { version: 1; employees: Employee[]; shifts: Shift[]; rules: Rules; swaps: Swap[]; dayOffs?: DayOff[]; holidays?: Holiday[]; workspaceLocation?: WorkspaceLocation };
+export type Store = { version: 1; employees: Employee[]; shifts: Shift[]; rules: Rules; swaps: Swap[]; dayOffs?: DayOff[]; holidays?: Holiday[]; workspaceLocation?: WorkspaceLocation; labor?:LaborConfig; absences?:Absence[] };
+export type Absence = {id:string;employeeId:string;kind:'ferias'|'afastamento'|'licenca';startsOn:string;endsOn:string};
+export type LaborInstrument = {id:string;kind:'CCT'|'ACT';name:string;unionName:string;reference:string;category:string;state:string;city?:string;startsOn:string;endsOn:string;sourceUrl?:string;clauseReference?:string;reviewedBy?:string;reviewedOn?:string;limits?:Partial<Omit<RuleLimits,'coverage'>>;sundayEvery?:2|3;holidayWork:'pending'|'prohibited'|'authorized'};
+export type LaborConfig = {activity:string;category:string;defaultInstrumentId?:string;instruments:LaborInstrument[]};
+export type LaborContext = {labor?:LaborConfig;absences?:Absence[];holidays?:Holiday[];workspaceLocation?:WorkspaceLocation};
