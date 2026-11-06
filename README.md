@@ -12,7 +12,7 @@ npm ci
 npm run dev
 ```
 
-O servidor usa a porta 3000. Dados fictícios são criados na primeira abertura, com datas relativas à semana atual em Brasília. A pedido do usuário, há acesso público temporário até 06/11/2026 às 15:02:47 (Brasília), sem precisar configurar credenciais. O prazo é fixo no servidor. Depois dele, o login volta a ser obrigatório. Para antecipar a proteção e configurar o administrador localmente, execute `npm run auth:setup`; o comando cria `.env.local`, ignorado pelo Git, e ativa `ESCALA_REQUIRE_LOGIN=true`. Com a proteção ativa e sem credenciais válidas, painel/API permanecem bloqueados.
+O servidor usa a porta 3000. Dados fictícios são criados na primeira abertura, com datas relativas à semana atual em Brasília. A pedido do usuário, há acesso público temporário até 08/11/2026 às 15:40:22 (Brasília), sem precisar configurar credenciais. O prazo é fixo no servidor. Depois dele, o login volta a ser obrigatório. Para antecipar a proteção e configurar o administrador localmente, execute `npm run auth:setup`; o comando cria `.env.local`, ignorado pelo Git, e ativa `ESCALA_REQUIRE_LOGIN=true`. Com a proteção ativa e sem credenciais válidas, painel/API permanecem bloqueados.
 
 ```bash
 npm test
@@ -114,7 +114,7 @@ No computador, use o botão ao lado da marca para recolher ou expandir o menu. O
 
 ## Acesso público temporário autorizado
 
-A pedido do usuário, o painel e a API de validação ficam acessíveis sem login até **06/11/2026 às 15:02:47, horário de Brasília** (`2026-11-06T18:02:47.000Z`). A janela foi definida em 04/11/2026, com duração de 48 horas; não é renovada por novos deploys ou acessos.
+A pedido do usuário, o painel e a API de validação ficam acessíveis sem login até **08/11/2026 às 15:40:22, horário de Brasília** (`2026-11-08T18:40:22.000Z`). A janela original de 04/11/2026 foi renovada a pedido do usuário em 06/11/2026 às 15:40:22 (Brasília), por mais 48 horas. O novo prazo é fixo e não é renovado por novos deploys ou acessos.
 
 O prazo fixo em `lib/access.ts` é conferido no proxy, na página principal e na API. Ao vencer, todas essas rotas voltam a exigir autenticação, mesmo que `ESCALA_REQUIRE_LOGIN=false` permaneça configurado. Valores desconhecidos do sinalizador também exigem login. Não existe um sinalizador que prolongue essa janela indefinidamente.
 
