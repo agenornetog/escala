@@ -1,5 +1,5 @@
 export const MANAGER_COOKIE = 'escala_manager';
-const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
+export const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 
 type AuthConfig = { url: string; key: string };
 export type Company = { id: string; name: string; role: 'admin' | 'manager' };
@@ -33,6 +33,37 @@ async function supabaseRequest(fetcher: typeof fetch, url: string, init: Request
   throw new ManagerAuthUnavailable();
 }
 
+export async function managerBackend(path: string, init: RequestInit = {}) {
+  const config = configuration();
+  const headers = membershipHeaders();
+  if (!config || !headers) throw new ManagerAuthUnavailable();
+  return supabaseRequest(fetch, config.url + path, {
+    ...init,
+    headers: { ...headers, 'Content-Type': 'application/json' },
+  });
+}
+
+async function platformAccess(actor: string) {
+  const response = await managerBackend('/rest/v1/escala_platform_admins?select=user_id&user_id=eq.' + actor);
+  if (!response.ok) throw new ManagerAuthUnavailable();
+  return (await response.json()).length > 0;
+}
+
+export async function verifiedManagerId(token: string | undefined, config = configuration(), fetcher = fetch) {
+  if (!config || !token || token.length > 3500) return null;
+  const response = await supabaseRequest(fetcher, config.url + '/auth/v1/user', {
+    headers: { apikey: config.key, Authorization: 'Bearer ' + token },
+  });
+  if (!response.ok) return null;
+  const { id } = await response.json();
+  return typeof id === 'string' && UUID.test(id) ? id as string : null;
+}
+
+export async function platformActor(token: string | undefined) {
+  const id = await verifiedManagerId(token);
+  return id && await platformAccess(id) ? id : null;
+}
+
 async function memberships(actor: string): Promise<Company[]> {
   const config = configuration();
   const headers = membershipHeaders();
@@ -54,16 +85,12 @@ export async function managerSession(
   listCompanies = memberships,
   config = configuration(),
   fetcher = fetch,
+  checkPlatform = listCompanies === memberships ? platformAccess : async () => false,
 ) {
-  if (!config || !token || token.length > 3500) return null;
-  const response = await supabaseRequest(fetcher, config.url + '/auth/v1/user', {
-    headers: { apikey: config.key, Authorization: 'Bearer ' + token },
-  });
-  if (!response.ok) return null;
-  const { id } = await response.json();
-  if (typeof id !== 'string' || !UUID.test(id)) return null;
-  const companies = await listCompanies(id);
-  return companies.length ? { companies } : null;
+  const id = await verifiedManagerId(token, config, fetcher);
+  if (!id) return null;
+  const [companies, platformAdmin] = await Promise.all([listCompanies(id), checkPlatform(id)]);
+  return platformAdmin ? { companies, platformAdmin } : companies.length ? { companies } : null;
 }
 
 export async function authenticateManager(email: string, password: string) {

@@ -45,6 +45,7 @@ test('Vercel integration secret key authorizes membership lookup through apikey'
       assert.equal(headers.get('Authorization'), 'Bearer user-token');
       return Response.json({ id: actor });
     }
+    if (url.pathname === '/rest/v1/escala_platform_admins') return Response.json([]);
     assert.equal(url.pathname, '/rest/v1/escala_memberships');
     assert.equal(url.searchParams.get('user_id'), 'eq.' + actor);
     if (headers.get('apikey') !== env.SUPABASE_SECRET_KEY || headers.has('Authorization')) {
@@ -54,4 +55,13 @@ test('Vercel integration secret key authorizes membership lookup through apikey'
   });
 
   assert.deepEqual(await authenticateManager('admin@example.com', 'password'), { token: 'user-token', maxAge: 3600 });
+});
+
+test('platform authorization is derived from the verified Auth UID even without company membership', async () => {
+  const config = { url: 'https://test.supabase.co', key: 'publishable' };
+  const actor = '00000000-0000-4000-8000-000000000001';
+  const fetcher: typeof fetch = async () => Response.json({ id: actor });
+  assert.deepEqual(await managerSession('token', async () => [], config, fetcher, async id => id === actor),
+    { companies: [], platformAdmin: true });
+  assert.equal(await managerSession('token', async () => [], config, fetcher, async () => false), null);
 });

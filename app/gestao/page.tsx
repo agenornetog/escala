@@ -1,6 +1,7 @@
+import { CompanyProvisioning } from './company-provisioning';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { MANAGER_COOKIE, managerSession, ManagerAuthUnavailable } from '@/lib/manager-auth';
+import { MANAGER_COOKIE, managerBackend, managerSession, ManagerAuthUnavailable } from '@/lib/manager-auth';
 
 export default async function ManagementPage() {
   const token = (await cookies()).get(MANAGER_COOKIE)?.value;
@@ -12,6 +13,17 @@ export default async function ManagementPage() {
     return <main><h1>Empresas</h1><p>Não foi possível carregar suas empresas. Tente novamente em instantes.</p></main>;
   }
   if (!session) redirect('/login');
+
+  if (session.platformAdmin) {
+    const response = await managerBackend('/rest/v1/escala_organizations?select=id,name&order=name');
+    if (!response.ok) throw new ManagerAuthUnavailable();
+    const companies = await response.json();
+    return <main className="mx-auto max-w-3xl p-6">
+      <h1 className="text-2xl font-semibold">Administração do Escalô</h1>
+      <p className="mt-2">Cadastre empresas e seus responsáveis.</p>
+      <CompanyProvisioning companies={companies} />
+    </main>;
+  }
 
   return <main className="mx-auto max-w-3xl p-6">
     <h1 className="text-2xl font-semibold">Suas empresas</h1>
