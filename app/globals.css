@@ -438,7 +438,39 @@ tfoot .employee-col > small { display: block; font-size: 10px; color: var(--fog)
 
 /* Login uses the same paper, typography and cobalt decision point as the app. */
 .login-shell { min-height: 100dvh; display: flex; flex-direction: column; }
-.login-brand { justify-content: center; font-size: clamp(36px, 7vw, 96px); }
+.login-brand-panel {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  min-height: 420px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: calc(var(--radius) * 2);
+  background: radial-gradient(ellipse at top right, #4278ff, transparent 65%), #174bc5;
+}
+.login-brand { justify-content: center; color: #fff; font-size: clamp(36px, 7vw, 96px); }
+.login-brand .brand-mark { background: currentColor; }
+.login-shift-grid {
+  position: absolute;
+  z-index: -1;
+  inset: 12% -10%;
+  display: grid;
+  grid-template: repeat(6, 1fr) / repeat(10, 1fr);
+  gap: 8px;
+  padding: 8px;
+  transform: rotate(-9deg);
+  background-image: linear-gradient(to right, #ffffff20 1px, transparent 1px), linear-gradient(to bottom, #ffffff20 1px, transparent 1px);
+  background-size: 10% calc(100% / 6);
+  mask-image: linear-gradient(to bottom, #000, transparent 46%, transparent 54%, #000);
+}
+.login-shift-grid span { border: 1px solid #ffffff38; border-radius: var(--radius); background: #ffffff24; }
+.login-shift-grid span:nth-child(1) { grid-area: 1 / 2 / 2 / 5; }
+.login-shift-grid span:nth-child(2) { grid-area: 1 / 7 / 2 / 10; }
+.login-shift-grid span:nth-child(3) { grid-area: 2 / 4 / 3 / 7; }
+.login-shift-grid span:nth-child(4) { grid-area: 5 / 2 / 6 / 5; }
+.login-shift-grid span:nth-child(5) { grid-area: 5 / 6 / 6 / 9; }
+.login-shift-grid span:nth-child(6) { grid-area: 6 / 4 / 7 / 7; }
 .login-brand .brand-mark { width: .24em; height: .24em; }
 .login-main { width: 100%; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 96px; padding: 56px 32px 72px; flex: 1; }
 .login-card { padding: 40px; border: 1px solid var(--line); background: var(--white); border-radius: var(--radius); }
@@ -466,6 +498,7 @@ tfoot .employee-col > small { display: block; font-size: 10px; color: var(--fog)
 }
 @media (max-width: 720px) {
  .login-main { display: flex; flex-direction: column; align-items: stretch; gap: 32px; padding: 20px 20px 40px; }
+ .login-brand-panel { min-height: 156px; }
  .login-card { padding: 26px 22px; }
  .login-lock { margin-bottom: 20px; }
  .login-form { margin-top: 24px; }

@@ -18,8 +18,13 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
   }
   return <div className="login-shell">
     <main className="login-main">
-      <div className="brand login-brand">
-        <span className="brand-mark" aria-hidden="true" />escalô
+      <div className="login-brand-panel">
+        <div className="login-shift-grid" aria-hidden="true">
+          <span /><span /><span /><span /><span /><span />
+        </div>
+        <div className="brand login-brand">
+          <span className="brand-mark" aria-hidden="true" />escalô
+        </div>
       </div>
       <section className="login-card" aria-labelledby="login-title"><div className="login-lock"><LockKeyhole size={22} /></div><h2 id="login-title">Bom ter você por aqui.</h2><p>Entre para planejar a equipe ou consultar sua jornada.</p>
         {!configured && <div className="login-unavailable" role="status">O acesso desta instalação ainda não foi configurado. O administrador precisa concluir a liberação do login.</div>}
