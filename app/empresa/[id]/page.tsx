@@ -19,6 +19,6 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
   });
   if (!response.ok) return <main role="alert">Não foi possível abrir o planejamento da empresa.</main>;
   const { revision, store }: { revision: number; store: Store | null } = await response.json();
-  return <Dashboard key={id} company={{ id, name: company.name, revision,
+  return <Dashboard key={id} company={{ id, name: company.name, canManageUsers: company.role === 'admin', revision,
     store: store ?? { version: 1, employees: [], shifts: [], swaps: [], rules: defaultRules } }} />;
 }
