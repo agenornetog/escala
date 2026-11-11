@@ -5,13 +5,20 @@ type AuthConfig = { url: string; key: string };
 export type Company = { id: string; name: string; role: 'admin' | 'manager' };
 
 function configuration(): AuthConfig | null {
-  const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const url = process.env.SUPABASE_URL?.trim().replace(/\/$/, '');
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY?.trim();
   return url && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url) && key ? { url, key } : null;
 }
 
+function membershipHeaders(): Record<string, string> | null {
+  const secret = process.env.SUPABASE_SECRET_KEY?.trim();
+  if (secret) return { apikey: secret };
+  const legacy = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  return legacy ? { apikey: legacy, Authorization: 'Bearer ' + legacy } : null;
+}
+
 export function managerAuthConfigured() {
-  return Boolean(configuration() && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(configuration() && membershipHeaders());
 }
 
 export class ManagerAuthUnavailable extends Error {}
@@ -28,14 +35,14 @@ async function supabaseRequest(fetcher: typeof fetch, url: string, init: Request
 
 async function memberships(actor: string): Promise<Company[]> {
   const config = configuration();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!config || !key) throw new ManagerAuthUnavailable();
+  const headers = membershipHeaders();
+  if (!config || !headers) throw new ManagerAuthUnavailable();
   const query = new URLSearchParams({
     user_id: 'eq.' + actor,
     select: 'role,company:escala_organizations!inner(id,name)',
   });
   const response = await supabaseRequest(fetch, config.url + '/rest/v1/escala_memberships?' + query, {
-    headers: { apikey: key, Authorization: 'Bearer ' + key },
+    headers,
   });
   if (!response.ok) throw new ManagerAuthUnavailable();
   const rows: { role: Company['role']; company: { id: string; name: string } }[] = await response.json();
