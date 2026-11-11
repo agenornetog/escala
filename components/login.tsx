@@ -1,6 +1,6 @@
 'use client';
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, CalendarDays, Check, Eye, EyeOff, LoaderCircle, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LoaderCircle, LockKeyhole, ShieldCheck } from 'lucide-react';
 export default function Login({ configured, demoAccess=false }: { configured: boolean; demoAccess?:boolean }) {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -17,15 +17,10 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
     } catch { setError('Não foi possível conectar. Confira sua conexão e tente novamente.'); setBusy(false); }
   }
   return <div className="login-shell">
-    <header className="login-header"><a className="brand" href="/login" aria-label="Escalô — início"><span className="brand-mark" aria-hidden="true" />escalô</a><span className="login-header-note">Pessoas. Tempo. Equilíbrio.</span></header>
     <main className="login-main">
-      <section className="login-intro" aria-labelledby="login-intro-title">
-        <span className="eyebrow">Um bom dia começa com uma boa escala</span>
-        <h1 id="login-intro-title">Cada pessoa.<br />{' '}No tempo certo.</h1>
-        <p>Mais clareza para planejar. Mais tranquilidade para sua equipe. Seu próximo turno começa aqui.</p>
-        <div className="login-preview" aria-hidden="true"><div className="login-preview-title"><CalendarDays size={18} /><span>Uma semana em equilíbrio</span><span className="pill">Planejada</span></div><div className="login-mini-days">{['Seg', 'Ter', 'Qua', 'Qui', 'Sex'].map((day, i) => <div key={day}><span>{day}</span><div className={`login-mini-shift ${i === 3 ? 'mini-off' : ''}`}>{i === 3 ? 'Folga' : <><span>08:00</span><span>17:00</span></>}</div></div>)}</div><div className="login-preview-footer"><Check size={14} />Tempo para trabalhar. Tempo para descansar.</div></div>
-        <div className="login-trust"><span><ShieldCheck size={16} />Planejamento com cuidado</span><span><LockKeyhole size={16} />Acesso restrito</span></div>
-      </section>
+      <div className="brand login-brand">
+        <span className="brand-mark" aria-hidden="true" />escalô
+      </div>
       <section className="login-card" aria-labelledby="login-title"><div className="login-lock"><LockKeyhole size={22} /></div><h2 id="login-title">Bom ter você por aqui.</h2><p>Entre para planejar a equipe ou consultar sua jornada.</p>
         {!configured && <div className="login-unavailable" role="status">O acesso desta instalação ainda não foi configurado. O administrador precisa concluir a liberação do login.</div>}
         <form onSubmit={submit} className="login-form">

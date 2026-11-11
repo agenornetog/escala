@@ -70,6 +70,7 @@ async function memberships(actor: string): Promise<Company[]> {
   if (!config || !headers) throw new ManagerAuthUnavailable();
   const query = new URLSearchParams({
     user_id: 'eq.' + actor,
+    active: 'eq.true',
     select: 'role,company:escala_organizations!inner(id,name)',
   });
   const response = await supabaseRequest(fetch, config.url + '/rest/v1/escala_memberships?' + query, {

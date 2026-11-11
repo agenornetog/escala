@@ -21,7 +21,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     let data;
     try { data = JSON.parse(raw); } catch { return failure('Dados inválidos.', 400); }
     if (!data || typeof data !== 'object') return failure('Dados inválidos.', 400);
-    const { remove, email, role, password } = data;
+    const { remove, email, role, password, userId, active } = data;
+    if (userId !== undefined || active !== undefined) {
+      if (typeof userId !== 'string' || !UUID.test(userId) || userId === actor || typeof active !== 'boolean') {
+        return failure('Não é possível alterar este acesso.', 400);
+      }
+      const result = await managerBackend('/rest/v1/rpc/escala_set_company_user_status', {
+        method: 'POST',
+        body: JSON.stringify({ p_organization: id, p_actor: actor, p_user: userId, p_active: active }),
+      });
+      return result.ok ? Response.json({ ok: true }) : failure('Não foi possível alterar o status.', result.status === 403 ? 403 : 400);
+    }
     if (remove !== undefined) {
       if (typeof remove !== 'string' || !UUID.test(remove) || remove === actor) return failure('Não é possível remover este acesso.', 400);
       const result = await companyUsers(id, actor, { remove });
