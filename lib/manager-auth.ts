@@ -23,10 +23,10 @@ export function managerAuthConfigured() {
 
 export class ManagerAuthUnavailable extends Error {}
 
-async function supabaseRequest(fetcher: typeof fetch, url: string, init: RequestInit) {
+async function supabaseRequest(fetcher: typeof fetch, url: string, init: RequestInit, preserveErrors = false) {
   try {
     const response = await fetcher(url, { ...init, cache: 'no-store', signal: AbortSignal.timeout(10000) });
-    if (response.ok || response.status === 400 || response.status === 401 || response.status === 403) return response;
+    if (preserveErrors || response.ok || response.status === 400 || response.status === 401 || response.status === 403) return response;
   } catch {
     // Network errors and timeouts use the same public error.
   }
@@ -40,7 +40,7 @@ export async function managerBackend(path: string, init: RequestInit = {}) {
   return supabaseRequest(fetch, config.url + path, {
     ...init,
     headers: { ...headers, 'Content-Type': 'application/json' },
-  });
+  }, true);
 }
 
 async function platformAccess(actor: string) {
@@ -93,6 +93,12 @@ export async function managerSession(
   return platformAdmin ? { companies, platformAdmin } : companies.length ? { companies } : null;
 }
 
+export function managerDestination(session: { companies: Company[]; platformAdmin?: boolean }) {
+  return !session.platformAdmin && session.companies.length === 1
+    ? '/empresa/' + session.companies[0].id
+    : '/gestao';
+}
+
 export async function authenticateManager(email: string, password: string) {
   const config = configuration();
   if (!config || !managerAuthConfigured()) return null;
@@ -104,5 +110,6 @@ export async function authenticateManager(email: string, password: string) {
   if (!response.ok) return null;
   const { access_token, expires_in } = await response.json();
   if (typeof access_token !== 'string' || !Number.isSafeInteger(expires_in) || expires_in < 1) return null;
-  return await managerSession(access_token) ? { token: access_token, maxAge: expires_in } : null;
+  const session = await managerSession(access_token);
+  return session ? { token: access_token, maxAge: expires_in, redirectTo: managerDestination(session) } : null;
 }

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const admin=await verifyCredentials(email,password);
     const manager = admin ? null : await authenticateManager(email, password);
     if (manager) {
-      const response = NextResponse.json({ ok: true, redirectTo: '/gestao' }, { headers });
+      const response = NextResponse.json({ ok: true, redirectTo: manager.redirectTo }, { headers });
       const options = sessionCookieOptions(request);
       response.cookies.set(MANAGER_COOKIE, manager.token, { ...options, maxAge: Math.min(options.maxAge, manager.maxAge) });
       response.cookies.set(SESSION_COOKIE, '', { ...options, maxAge: 0 });

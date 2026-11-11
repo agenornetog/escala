@@ -54,7 +54,7 @@ test('Vercel integration secret key authorizes membership lookup through apikey'
     return Response.json([{ role: 'admin', company: { id: 'company', name: 'Empresa' } }]);
   });
 
-  assert.deepEqual(await authenticateManager('admin@example.com', 'password'), { token: 'user-token', maxAge: 3600 });
+  assert.deepEqual(await authenticateManager('admin@example.com', 'password'), { token: 'user-token', maxAge: 3600, redirectTo: '/empresa/company' });
 });
 
 test('platform authorization is derived from the verified Auth UID even without company membership', async () => {
@@ -64,4 +64,12 @@ test('platform authorization is derived from the verified Auth UID even without 
   assert.deepEqual(await managerSession('token', async () => [], config, fetcher, async id => id === actor),
     { companies: [], platformAdmin: true });
   assert.equal(await managerSession('token', async () => [], config, fetcher, async () => false), null);
+});
+
+test('company accounts with a single membership open the schedule directly', async () => {
+  const { managerDestination } = await import('../lib/manager-auth');
+  const companies = [{ id: 'company', name: 'Empresa', role: 'admin' as const }];
+  assert.equal(managerDestination({ companies }), '/empresa/company');
+  assert.equal(managerDestination({ companies, platformAdmin: true }), '/gestao');
+  assert.equal(managerDestination({ companies: [...companies, { ...companies[0], id: 'other' }] }), '/gestao');
 });

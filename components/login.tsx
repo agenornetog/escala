@@ -13,7 +13,7 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
       const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: data.get('email'), password: data.get('password') }) });
       const result = await response.json();
       if (!response.ok) { setError(result.error || 'Não foi possível entrar. Tente novamente.'); setBusy(false); return; }
-      window.location.replace(result.redirectTo === '/colaborador' || result.redirectTo === '/gestao' ? result.redirectTo : '/');
+      window.location.replace(result.redirectTo === '/colaborador' || result.redirectTo === '/gestao' || (typeof result.redirectTo === 'string' && /^\/empresa\/[a-f0-9-]{36}$/i.test(result.redirectTo)) ? result.redirectTo : '/');
     } catch { setError('Não foi possível conectar. Confira sua conexão e tente novamente.'); setBusy(false); }
   }
   return <div className="login-shell">

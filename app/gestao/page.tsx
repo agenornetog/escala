@@ -1,7 +1,7 @@
 import { CompanyProvisioning } from './company-provisioning';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { MANAGER_COOKIE, managerBackend, managerSession, ManagerAuthUnavailable } from '@/lib/manager-auth';
+import { MANAGER_COOKIE, managerBackend, managerDestination, managerSession, ManagerAuthUnavailable } from '@/lib/manager-auth';
 
 export default async function ManagementPage() {
   const token = (await cookies()).get(MANAGER_COOKIE)?.value;
@@ -25,11 +25,13 @@ export default async function ManagementPage() {
     </main>;
   }
 
+  const destination = managerDestination(session);
+  if (destination !== '/gestao') redirect(destination);
   return <main className="mx-auto max-w-3xl p-6">
     <h1 className="text-2xl font-semibold">Suas empresas</h1>
     <ul className="mt-4 space-y-2">
       {session.companies.map(company => <li key={company.id}>
-        {company.name} <span>({company.role === 'admin' ? 'Administrador' : 'Gestor'})</span>
+        <a href={'/empresa/' + company.id}>{company.name}</a> <span>({company.role === 'admin' ? 'Administrador' : 'Gestor'})</span>
       </li>)}
     </ul>
   </main>;
