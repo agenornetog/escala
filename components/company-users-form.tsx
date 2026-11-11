@@ -3,13 +3,13 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
-type User = { id: string; email: string; role: 'admin' | 'manager'; self: boolean };
+export type CompanyUser = { id: string; email: string; role: 'admin' | 'manager'; self: boolean };
 
-export function UsersForm({ organization, users }: { organization: string; users: User[] }) {
+export function UsersForm({ organization, users }: { organization: string; users: CompanyUser[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [remove, setRemove] = useState<User | null>(null);
+  const [remove, setRemove] = useState<CompanyUser | null>(null);
 
   async function submit(data: object, success: string) {
     setBusy(true);

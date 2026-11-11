@@ -63,7 +63,8 @@ small { font-size: 12px; }
 .sidebar-label { min-width: 0; }
 .sidebar-label strong { display: block; font-size: 12px; font-weight: 500; white-space: nowrap; }
 .sidebar-label small { display: block; color: var(--fog); font-size: 10px; margin-top: 4px; white-space: nowrap; }
-.sidebar-workspace-arrow { margin-left: auto; color: var(--fog); }
+.sidebar-workspace .sidebar-label strong { overflow: hidden; text-overflow: ellipsis; }
+.sidebar-workspace-arrow { margin-left: auto; color: var(--fog); flex-shrink: 0; }
 .sidebar-caption { font-size: 10px; font-weight: 500; letter-spacing: .05em; color: var(--fog); padding: 28px 12px 12px; }
 .app-sidebar nav { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 .nav-link { display: flex; align-items: center; gap: 12px; position: relative; min-height: 44px; width: 100%; padding: 12px; border-radius: var(--radius); font-size: 13px; font-weight: 500; white-space: nowrap; color: var(--smoke); text-align: left; }
