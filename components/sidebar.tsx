@@ -93,7 +93,7 @@ export default function Sidebar({
     </header>
     <aside ref={panel} id="app-sidebar" className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''}`} role={mobileOpen ? 'dialog' : undefined} aria-modal={mobileOpen ? true : undefined} aria-label="Menu de navegação">
       <div className="sidebar-brand-row">
-        <a href="#" className="brand" aria-label="Escala — início" title={collapsed ? 'Escala — início' : undefined} onClick={event => { event.preventDefault(); navigate('Escalas'); }}><span className="brand-mark" aria-hidden="true" /><span className="sidebar-brand-name">escala<span className="brand-dot">.</span></span></a>
+        <a href="#" className="brand" aria-label="Escalô — início" title={collapsed ? 'Escalô — início' : undefined} onClick={event => { event.preventDefault(); navigate('Escalas'); }}><span className="brand-mark" aria-hidden="true" /><span className="sidebar-brand-name">escalô</span></a>
         <button className="icon-btn sidebar-toggle" onClick={onToggle} aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} title={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} aria-expanded={!collapsed} aria-controls="main-navigation">{collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}</button>
         <button className="icon-btn sidebar-close" aria-label="Fechar menu" onClick={onMobileClose}><X size={21} /></button>
       </div>

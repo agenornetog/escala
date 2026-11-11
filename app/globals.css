@@ -47,8 +47,6 @@ small { font-size: 12px; }
 .app-shell.sidebar-collapsed { --sidebar-width: 80px; }
 .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 30px; font-weight: 600; letter-spacing: -.048em; line-height: 1; flex-shrink: 0; }
 .brand-mark { width: 13px; height: 13px; border-radius: 120px; background: var(--accent); display: inline-block; flex-shrink: 0; }
-.brand-dot { color: var(--accent); margin-left: -9px; }
-.sidebar-brand-name .brand-dot { margin-left: 0; }
 .icon-btn { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); color: var(--smoke); flex-shrink: 0; }
 .icon-btn:hover { background: var(--chalk); color: var(--ink); }
 .notification-btn { position: relative; }

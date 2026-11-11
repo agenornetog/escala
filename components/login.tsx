@@ -17,7 +17,7 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
     } catch { setError('Não foi possível conectar. Confira sua conexão e tente novamente.'); setBusy(false); }
   }
   return <div className="login-shell">
-    <header className="login-header"><a className="brand" href="/login" aria-label="Escala — início"><span className="brand-mark" aria-hidden="true" />escala<span className="brand-dot">.</span></a><span className="login-header-note">Pessoas. Tempo. Equilíbrio.</span></header>
+    <header className="login-header"><a className="brand" href="/login" aria-label="Escalô — início"><span className="brand-mark" aria-hidden="true" />escalô</a><span className="login-header-note">Pessoas. Tempo. Equilíbrio.</span></header>
     <main className="login-main">
       <section className="login-intro" aria-labelledby="login-intro-title">
         <span className="eyebrow">Um bom dia começa com uma boa escala</span>
@@ -35,6 +35,6 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
           <button className="btn primary login-submit" disabled={busy}>{busy ? <><LoaderCircle size={17} className="spin" />Entrando…</> : <>Entrar na minha conta<ArrowRight size={17} /></>}</button>
         </form>{demoAccess&&<p className="login-help"><a href="/">Continuar na demonstração</a></p>}<p className="login-help">Precisa de acesso ou esqueceu sua senha?<br />Fale com o administrador da sua operação.</p><div className="login-card-footer"><ShieldCheck size={15} />Uma sessão segura para planejar melhor.</div>
       </section>
-    </main><footer className="login-footer"><span>Feito para pessoas. Pensado para sua operação.</span><span>Escala · Gestão de equipes</span></footer>
+    </main><footer className="login-footer"><span>Feito para pessoas. Pensado para sua operação.</span><span>Escalô · Gestão de equipes</span></footer>
   </div>;
 }

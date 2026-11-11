@@ -7,7 +7,7 @@ import { loginRequired } from '@/lib/access';
 import { managerAuthConfigured } from '@/lib/manager-auth';
 import Login from '@/components/login';
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Entrar · Escala' };
+export const metadata = { title: 'Entrar · Escalô' };
 export default async function LoginPage() {
   const token=(await cookies()).get(SESSION_COOKIE)?.value;
   let employee=false;
