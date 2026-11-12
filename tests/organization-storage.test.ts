@@ -55,7 +55,7 @@ test('custom teams are saved and read only within the manager organization', asy
   const db = new PGlite();
   try {
     await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users (id uuid primary key);');
-    for (const file of ['20261111000100_escala_organizations.sql', '20261111140000_escala_membership_status.sql', '20261112200000_escala_custom_teams.sql']) {
+    for (const file of ['20261111000100_escala_organizations.sql', '20261111140000_escala_membership_status.sql', '20261112200000_escala_custom_teams.sql', '20261112210000_escala_remove_custom_teams.sql']) {
       await db.exec(await readFile('supabase/migrations/' + file, 'utf8'));
     }
     const a = '00000000-0000-4000-8000-000000000001';
@@ -78,6 +78,12 @@ test('custom teams are saved and read only within the manager organization', asy
     await assert.rejects(save(a,managerB,2,{...store,teams:['Outra']}), { code: '42501' });
     await assert.rejects(save(b,managerB,1,{...store,employees:[{id:'e1',team:'Logística'}]}), { code: '23503' });
     await save(b,managerB,1,{...store,teams:['Logística']});
+    assert.ok((await teams(b,managerB)).includes('Logística'));
+    await assert.rejects(save(a,managerB,2,{...store,teams:[]}), { code: '42501' });
+    await assert.rejects(save(a,managerA,2,{...store,teams:[],employees:[{id:'e1',team:'Logística'}]}), { code: '23503' });
+    assert.ok((await teams(a,managerA)).includes('Logística'));
+    await save(a,managerA,2,{...store,teams:[],employees:[{id:'e1',team:'Campo'}]});
+    assert.deepEqual((await teams(a,managerA)).sort(), ['Atendimento','Campo','Suporte']);
     assert.ok((await teams(b,managerB)).includes('Logística'));
   } finally {
     await db.close();
