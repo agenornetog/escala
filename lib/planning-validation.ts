@@ -1,3 +1,4 @@
+import { parseTeams, planningTeams } from '@/lib/teams';
 import { normalizeLabor, normalizeAbsences } from '@/lib/labor-rules';
 import { validWeeklyTargetMinutes } from '@/lib/employee-schedule';
 import { normalizeHoliday, normalizeLocation } from '@/lib/holidays';
@@ -42,12 +43,14 @@ export function validatePlanningFields(data: any) {
 
 export function parsePlanning(data: any): Store {
   const fields = validatePlanningFields(data);
+  const teams = parseTeams(data.teams);
+  const allowedTeams = new Set(planningTeams({teams}));
   const ids = new Set(fields.shifts.map(shift => shift.id));
   if (data.version !== 1 || !Array.isArray(data.swaps) || data.swaps.length > 10000
-    || fields.employees.some(e => typeof e.name !== 'string' || typeof e.role !== 'string' || typeof e.color !== 'string' || !['Campo','Suporte','Atendimento'].includes(e.team))
+    || fields.employees.some(e => typeof e.name !== 'string' || typeof e.role !== 'string' || typeof e.color !== 'string' || !allowedTeams.has(e.team))
     || data.swaps.some((swap: Store['swaps'][number]) => typeof swap.id !== 'string' || !ids.has(swap.fromShiftId) || !ids.has(swap.toShiftId)
       || !['pending','approved','rejected'].includes(swap.status) || typeof swap.createdAt !== 'string')) {
     throw new Error('Invalid planning store');
   }
-  return { version: 1, ...fields, swaps: data.swaps };
+  return { version: 1, ...fields, ...(teams && {teams}), swaps: data.swaps };
 }

@@ -50,3 +50,36 @@ test('planning saves are revisioned, atomic and scoped to current membership', a
     await db.close();
   }
 });
+
+test('custom teams are saved and read only within the manager organization', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec('create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users (id uuid primary key);');
+    for (const file of ['20261111000100_escala_organizations.sql', '20261111140000_escala_membership_status.sql', '20261112200000_escala_custom_teams.sql']) {
+      await db.exec(await readFile('supabase/migrations/' + file, 'utf8'));
+    }
+    const a = '00000000-0000-4000-8000-000000000001';
+    const b = '00000000-0000-4000-8000-000000000002';
+    const managerA = '00000000-0000-4000-8000-000000000003';
+    const managerB = '00000000-0000-4000-8000-000000000004';
+    await db.query('insert into auth.users values ($1),($2)', [managerA, managerB]);
+    await db.query("insert into public.escala_organizations(id,name) values ($1,'A'),($2,'B')", [a,b]);
+    await db.query("insert into public.escala_memberships(organization_id,user_id,role) values ($1,$2,'manager'),($3,$4,'manager')", [a,managerA,b,managerB]);
+    await db.exec('set role service_role');
+    const store = { version: 1, employees: [], rules: {}, shifts: [], swaps: [] };
+    const save = (org: string, actor: string, revision: number, value: object) => db.query('select public.escala_write_planning($1,$2,$3,$4)', [org,actor,revision,JSON.stringify(value)]);
+    const teams = async (org: string, actor: string) => (await db.query<{ teams: string[] }>("select public.escala_read_planning($1,$2) #> '{store,teams}' as teams", [org,actor])).rows[0].teams;
+    await save(a,managerA,0,{...store,teams:['Logística']});
+    await save(a,managerA,1,{...store,employees:[{id:'e1',team:'Logística'}]});
+    assert.ok((await teams(a,managerA)).includes('Logística'));
+    await save(b,managerB,0,store);
+    assert.ok(!(await teams(b,managerB)).includes('Logística'));
+    await assert.rejects(teams(a,managerB), { code: '42501' });
+    await assert.rejects(save(a,managerB,2,{...store,teams:['Outra']}), { code: '42501' });
+    await assert.rejects(save(b,managerB,1,{...store,employees:[{id:'e1',team:'Logística'}]}), { code: '23503' });
+    await save(b,managerB,1,{...store,teams:['Logística']});
+    assert.ok((await teams(b,managerB)).includes('Logística'));
+  } finally {
+    await db.close();
+  }
+});
