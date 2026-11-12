@@ -19,6 +19,8 @@ const navigation = [
 
 type Props = {
   page: string;
+  companyName?: string;
+  canManageUsers?: boolean;
   openAccess?: boolean;
   collapsed: boolean;
   mobileOpen: boolean;
@@ -34,10 +36,12 @@ type Props = {
 };
 
 export default function Sidebar({
-  page, openAccess=false, collapsed, mobileOpen, pendingCount, notificationCount,
+  page, companyName, canManageUsers=false, openAccess=false, collapsed, mobileOpen, pendingCount, notificationCount,
   onNavigate, onToggle, onMobileOpen, onMobileClose, onHelp,
   onNotifications, onLogout,
 }: Props) {
+  const workspaceName = companyName ?? 'TCM Operações';
+  const items = canManageUsers ? [...navigation, { name: 'Usuários', icon: Users }] : navigation;
   const panel = useRef<HTMLElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
 
@@ -89,14 +93,14 @@ export default function Sidebar({
     </header>
     <aside ref={panel} id="app-sidebar" className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''}`} role={mobileOpen ? 'dialog' : undefined} aria-modal={mobileOpen ? true : undefined} aria-label="Menu de navegação">
       <div className="sidebar-brand-row">
-        <a href="#" className="brand" aria-label="Escala — início" title={collapsed ? 'Escala — início' : undefined} onClick={event => { event.preventDefault(); navigate('Escalas'); }}><span className="brand-mark" aria-hidden="true" /><span className="sidebar-brand-name">escala<span className="brand-dot">.</span></span></a>
+        <a href="#" className="brand" aria-label="Escalô — início" title={collapsed ? 'Escalô — início' : undefined} onClick={event => { event.preventDefault(); navigate('Escalas'); }}><span className="brand-mark" aria-hidden="true" /><span className="sidebar-brand-name">escalô</span></a>
         <button className="icon-btn sidebar-toggle" onClick={onToggle} aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} title={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} aria-expanded={!collapsed} aria-controls="main-navigation">{collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}</button>
         <button className="icon-btn sidebar-close" aria-label="Fechar menu" onClick={onMobileClose}><X size={21} /></button>
       </div>
-      <button className="sidebar-workspace" aria-label="Sobre TCM Operações" title={collapsed ? 'TCM Operações' : undefined} onClick={help}><span className="workspace-avatar">T</span><span className="sidebar-label"><strong>TCM Operações</strong><small>Seu espaço de planejamento</small></span><ChevronDown size={14} className="sidebar-workspace-arrow" /></button>
+      <button className="sidebar-workspace" aria-label={companyName ? 'Empresas · ' + workspaceName : 'Sobre ' + workspaceName} title={workspaceName} onClick={companyName ? () => window.location.assign('/gestao') : help}><span className="workspace-avatar">{workspaceName.charAt(0).toLocaleUpperCase('pt-BR')}</span><span className="sidebar-label"><strong>{workspaceName}</strong><small>Seu espaço de planejamento</small></span><ChevronDown size={14} className="sidebar-workspace-arrow" /></button>
       <span className="sidebar-caption">Workspace</span>
       <nav id="main-navigation" aria-label="Navegação principal">
-        {navigation.map(item => <button key={item.name} className={`nav-link ${page === item.name ? 'active' : ''}`} aria-label={item.name} aria-current={page === item.name ? 'page' : undefined} title={collapsed ? item.name : undefined} onClick={() => navigate(item.name)}><item.icon size={19} /><span className="sidebar-label">{item.name}</span>{item.name === 'Trocas de turno' && pendingCount > 0 && <b className="nav-count">{pendingCount}</b>}</button>)}
+        {items.map(item => <button key={item.name} className={`nav-link ${page === item.name ? 'active' : ''}`} aria-label={item.name} aria-current={page === item.name ? 'page' : undefined} title={collapsed ? item.name : undefined} onClick={() => navigate(item.name)}><item.icon size={19} /><span className="sidebar-label">{item.name}</span>{item.name === 'Trocas de turno' && pendingCount > 0 && <b className="nav-count">{pendingCount}</b>}</button>)}
       </nav>
       <div className="sidebar-footer">
         <button className="sidebar-action" aria-label="Abrir notificações" title={collapsed ? 'Notificações' : undefined} onClick={notifications}><Bell size={18} /><span className="sidebar-label">Notificações</span>{notificationCount > 0 && <span className="sidebar-indicator" aria-hidden="true" />}</button>

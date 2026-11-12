@@ -6,7 +6,7 @@ import { scheduleForMonth } from '@/lib/employee-schedule';
 import { today } from '@/lib/dates';
 import EmployeePortal from '@/components/employee-portal';
 export const dynamic='force-dynamic';
-export const metadata={title:'Minha jornada · Escala'};
+export const metadata={title:'Minha jornada · Escalô'};
 export default async function EmployeePage(){
  let current;
  try{current=await currentEmployee((await cookies()).get(SESSION_COOKIE)?.value);}catch(error){
