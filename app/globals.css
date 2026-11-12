@@ -413,7 +413,7 @@ tfoot .employee-col > small { display: block; font-size: 10px; color: var(--fog)
   .toast { bottom: 16px; font-size: 12px; padding: 14px 16px; gap: 8px; }
 }
 @media (max-width: 720px) {
-  .main-area, .sidebar-collapsed .main-area { width: 100%; margin-left: 0; }
+  .main-area, .sidebar-collapsed .main-area { width: 100%; margin-left: 0; transition: none; }
   .mobile-toolbar { min-height: 68px; padding: 0 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); background: var(--paper); }
   .mobile-toolbar .notification-btn { margin-left: auto; }
   .mobile-page-title { font-size: 13px; color: var(--charcoal); font-weight: 500; }

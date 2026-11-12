@@ -25,7 +25,11 @@ test('admin publishes access; collaborator sees only own month and cannot reach 
   expect((await employee.request.post(base+'/api/validate',{data:{}})).status()).toBe(403);
   expect((await employee.request.put(base+'/api/employee/me',{data:{}})).status()).toBe(405);
   await employee.goto(base+'/');await expect(employee).toHaveURL(base+'/colaborador');
-  for(const width of [390,1440]){await employee.setViewportSize({width,height:900});expect(await employee.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await employee.screenshot({path:testInfo.outputPath(`minha-jornada-${width}.png`),fullPage:true});}
+  for(const width of [390,1440]){
+   await employee.setViewportSize({width,height:900});
+   await expect.poll(()=>employee.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+   await employee.screenshot({path:testInfo.outputPath(`minha-jornada-${width}.png`),fullPage:true});
+  }
   await employee.setViewportSize({width:390,height:900});
   await employee.getByRole('button',{name:'Abrir menu'}).click();
   await expect(navigation.getByRole('button',{name:'Escalas'})).toBeVisible();
