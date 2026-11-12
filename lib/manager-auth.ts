@@ -121,12 +121,12 @@ export async function authenticateManager(email: string, password: string, emplo
     : null;
 }
 
-export async function setInvitedUserPassword(token: string, password: string) {
+export async function updateAuthPassword(token: string, password: string, currentPassword?: string) {
   const config = configuration();
   if (!config) throw new ManagerAuthUnavailable();
   return supabaseRequest(fetch, config.url + '/auth/v1/user', {
     method: 'PUT',
     headers: { apikey: config.key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ password, current_password: currentPassword }),
   }, true);
 }

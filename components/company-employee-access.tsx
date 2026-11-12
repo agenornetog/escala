@@ -48,7 +48,7 @@ export function CompanyEmployeeAccess({ organization, employee, revision, pendin
   const [message, setMessage] = useState('');
   const [failure, setFailure] = useState('');
 
-  async function action(payload: object, success: (result: { invited?: boolean }) => string) {
+  async function action(payload: object, success: (result: { invited?: boolean; passwordCreated?: boolean }) => string) {
     setBusy(true);
     setMessage('');
     setFailure('');
@@ -66,8 +66,11 @@ export function CompanyEmployeeAccess({ organization, employee, revision, pendin
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fields = new FormData(event.currentTarget);
-    void action({ action: 'link', employee: employee.id, email: fields.get('email'), allowSwaps: fields.has('allowSwaps') },
-      result => result.invited ? 'Convite enviado ao colaborador.' : 'Acesso do colaborador salvo.');
+    const password = fields.get('password') ?? '';
+    void action({ action: 'link', employee: employee.id, email: fields.get('email'), password, allowSwaps: fields.has('allowSwaps') },
+      result => result.passwordCreated ? 'Acesso criado com senha provisória.'
+        : result.invited ? 'Convite enviado ao colaborador.'
+        : password ? 'Conta existente vinculada. A senha atual continua válida.' : 'Acesso do colaborador salvo.');
   }
 
   return <Modal title={'Acesso de ' + employee.name} close={close}>
@@ -76,6 +79,7 @@ export function CompanyEmployeeAccess({ organization, employee, revision, pendin
     {data ? <>
       <form className="form-grid" key={account?.email ?? 'new'} onSubmit={save}>
         <label className="full">E-mail de acesso<input name="email" type="email" required maxLength={254} defaultValue={account?.email} readOnly={Boolean(account)} /></label>
+        {!account && <label className="full">Senha provisória<input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={256} /><small>Deixe em branco para usar convite ou vincular uma conta existente.</small></label>}
         <label className="individual-toggle full"><input type="checkbox" name="allowSwaps" defaultChecked={account?.allow_swaps} />Permitir solicitação de troca de turno</label>
         <div className="full"><button className="btn primary" disabled={busy || pending}>{account ? 'Salvar permissão' : 'Criar ou vincular acesso'}</button></div>
       </form>

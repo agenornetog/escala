@@ -215,7 +215,7 @@ Nesta versão o gerador atende workspaces com até 100 colaboradores e 10.000 tu
 
 ## Acesso e trocas de turno no painel da empresa
 
-Em **Colaboradores → Novo colaborador**, informe o e-mail de acesso para vincular a conta existente ou enviar um convite do Supabase Auth. Use **Acesso** no cartão para publicar a escala individual, reenviar o convite ou habilitar solicitações de troca. A pessoa entra pelo login oficial e consulta a própria escala publicada.
+Em **Colaboradores → Novo colaborador**, informe o e-mail de acesso. Para uma conta nova, preencha a senha provisória ou deixe o campo em branco para enviar um convite do Supabase Auth. Contas existentes são vinculadas com a senha que já usam. Use **Acesso** no cartão para publicar a escala individual, reenviar o convite ou habilitar solicitações de troca. A pessoa entra pelo login oficial, consulta a própria escala publicada e pode usar **Alterar senha** no portal.
 
 O colaborador escolhe um turno publicado e informa o motivo. Em **Trocas de turno → Pedidos dos colaboradores**, o gestor indica a cobertura ou recusa com um motivo. O sistema valida a cobertura antes de atualizar o planejamento e publicar as escalas dos envolvidos.
 

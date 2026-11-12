@@ -66,6 +66,10 @@ export async function POST(request: Request, context: Context) {
 
     if (input.action === 'link') {
       const email = typeof input.email === 'string' ? input.email.trim().toLowerCase() : '';
+      const password = input.password ?? '';
+      if (typeof password !== 'string' || (password && (password.length < 12 || password.length > 256))) {
+        return fail('A senha provisória precisa ter de 12 a 256 caracteres.', 400);
+      }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254
         || typeof input.allowSwaps !== 'boolean' || !store.employees.some(employee => employee.id === input.employee)) {
         return fail('Confira o colaborador e o e-mail informado.', 400);
@@ -74,6 +78,17 @@ export async function POST(request: Request, context: Context) {
       let linked = await employeeRpc('escala_employee_account_link', payload);
       if (!linked.ok) return rpcError(linked);
       const existing = await linked.json() as { confirmed: boolean } | null;
+      if (password && !existing) {
+        const created = await managerBackend('/auth/v1/admin/users', {
+          method: 'POST', body: JSON.stringify({ email, password, email_confirm: true }),
+        });
+        if (!created.ok) return fail('Não foi possível criar a conta com essa senha. Confira os requisitos e tente novamente.', 400);
+        linked = await employeeRpc('escala_employee_account_link', payload);
+        if (!linked.ok) return rpcError(linked);
+        if (!(await linked.json())) return fail('A conta foi criada. Tente vincular novamente pelo acesso do colaborador.', 503);
+        return json({ passwordCreated: true });
+      }
+      if (password && existing) return json({ passwordCreated: false });
       if (existing && (existing.confirmed || input.resend !== true)) {
         if (input.resend === true) return fail('Este e-mail já foi confirmado. O colaborador pode entrar com a conta existente.', 409);
         return json({ invited: false });

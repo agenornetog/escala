@@ -1,6 +1,6 @@
 import { sameOrigin } from '@/lib/auth';
 import { companyEmployeeSession } from '@/lib/company-employee';
-import { setInvitedUserPassword } from '@/lib/manager-auth';
+import { updateAuthPassword } from '@/lib/manager-auth';
 
 export async function POST(request: Request) {
   const headers = { 'Cache-Control': 'no-store' };
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   }
   try {
     if (!(await companyEmployeeSession(input.token))) return fail('Convite inválido ou expirado.', 401);
-    const result = await setInvitedUserPassword(input.token, input.password);
+    const result = await updateAuthPassword(input.token, input.password);
     return result.ok ? Response.json({ ok: true }, { headers }) : fail('Não foi possível definir a senha. Confira o convite e tente novamente.', 400);
   } catch {
     return fail('Não foi possível ativar o acesso agora. Tente novamente.', 503);
