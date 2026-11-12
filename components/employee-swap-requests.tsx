@@ -49,7 +49,7 @@ export default function EmployeeSwapRequests({ organization, allowed, shifts, re
         <option key={shift.id} value={shift.id}>{labelDate(shift.date)} · {shift.start}–{shift.end}</option>)}</select></label>
       <label>Motivo<textarea name="reason" required maxLength={500} /></label>
       <div className="full"><button className="btn primary" disabled={busy}>Solicitar troca</button></div>
-    </form> : <p>Nenhum turno publicado disponível para solicitar neste mês.</p>)}
+    </form> : <p>Nenhum turno disponível para solicitar neste mês.</p>)}
     {message && <p role="status">{message}</p>}
     {requests.map(request => <article className="swap-row" key={request.id}>
       <div><strong>{labelDate(request.shift.date)} · {request.shift.start}–{request.shift.end}</strong><p>{request.reason}</p>

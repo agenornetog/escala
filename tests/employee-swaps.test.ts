@@ -13,7 +13,7 @@ test('coverage assigns the requested shift to another employee and rejects stale
   assert.throws(() => coveragePlan(store, shift, 'solicitante'));
 });
 
-test('employee requests are scoped to published shifts and manager decisions are atomic', async () => {
+test('saved shifts appear without publication and employee swap decisions are atomic', async () => {
   const { PGlite } = await import('@electric-sql/pglite');
   const { readFile } = await import('node:fs/promises');
   const db = new PGlite();
@@ -23,7 +23,8 @@ test('employee requests are scoped to published shifts and manager decisions are
   const outsider = '00000000-0000-4000-8000-000000000004';
   const shift = { id: 'turno', employeeId: 'pessoa', date: '2099-01-02', start: '08:00', end: '16:00', breakMinutes: 60 };
   const roster = ['pessoa', 'cobertura'].map(id => ({ id, name: id, team: 'Suporte', regime: '5x2', role: 'Suporte' }));
-  const store = { version: 1, employees: roster, rules: {}, shifts: [shift], swaps: [] };
+  const otherShift = { ...shift, id: 'outro-turno', employeeId: 'cobertura', date: '2099-01-03' };
+  const store = { version: 1, employees: roster, rules: {}, shifts: [shift, otherShift], swaps: [] };
   try {
     await db.exec("create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz);");
     for (const file of [
@@ -32,6 +33,7 @@ test('employee requests are scoped to published shifts and manager decisions are
       '20261111130000_escala_company_users.sql',
       '20261111140000_escala_membership_status.sql',
       '20261112160000_escala_employee_accounts.sql',
+      '20261112190000_escala_live_employee_schedule.sql',
     ]) {
       await db.exec(await readFile('supabase/migrations/' + file, 'utf8'));
     }
@@ -44,8 +46,10 @@ test('employee requests are scoped to published shifts and manager decisions are
     );
     await assert.rejects(link(outsider, true), { code: '42501' });
     await link(manager, false);
-    const publish = { pessoa: { employee: roster[0], shifts: [shift], dayOffs: [], holidays: [] } };
-    await db.query('select public.escala_employee_publish($1,$2,1,$3)', [organization, manager, JSON.stringify(publish)]);
+    const visibleShifts = async () => (await db.query<{ shifts: unknown }>(
+      "select public.escala_employee_account_read($1) #> '{0,schedule,shifts}' as shifts", [employee],
+    )).rows[0].shifts;
+    assert.deepEqual(await visibleShifts(), [shift]);
     const submit = (actor: string) => db.query<{ id: string }>(
       'select public.escala_employee_swap_submit($1,$2,$3,$4) as id', [organization, actor, shift.id, 'Preciso de cobertura'],
     );
@@ -54,18 +58,20 @@ test('employee requests are scoped to published shifts and manager decisions are
     await assert.rejects(submit(outsider), { code: '42501' });
     const [{ id }] = (await submit(employee)).rows;
     await assert.rejects(submit(employee), { code: '23505' });
-    const updated = { ...store, shifts: [{ ...shift, employeeId: 'cobertura' }] };
+    const updated = { ...store, shifts: [{ ...shift, employeeId: 'cobertura' }, otherShift] };
     const decide = (actor: string, revision: number) => db.query(
       'select public.escala_employee_swap_decide($1,$2,$3,null,$4,$5,$6)',
-      [organization, actor, id, revision, JSON.stringify(updated), JSON.stringify({ pessoa: { ...publish.pessoa, shifts: [] } })],
+      [organization, actor, id, revision, JSON.stringify(updated), '{}'],
     );
     await assert.rejects(decide(employee, 1), { code: '42501' });
     await assert.rejects(decide(manager, 0), { code: '40001' });
     assert.deepEqual((await db.query('select status from public.escala_employee_swap_requests')).rows, [{ status: 'pending' }]);
     await decide(manager, 1);
     await assert.rejects(decide(manager, 2), { code: '40001' });
-    assert.deepEqual((await db.query('select employee_id from public.escala_shifts')).rows, [{ employee_id: 'cobertura' }]);
-    assert.deepEqual((await db.query("select schedule->'shifts' as shifts from public.escala_employee_accounts")).rows, [{ shifts: [] }]);
+    assert.deepEqual((await db.query("select employee_id from public.escala_shifts where id='turno'")).rows, [{ employee_id: 'cobertura' }]);
+    assert.deepEqual(await visibleShifts(), []);
+    await db.query('select public.escala_write_planning($1,$2,2,$3)', [organization, manager, JSON.stringify(store)]);
+    assert.deepEqual(await visibleShifts(), [shift]);
   } finally {
     await db.close();
   }

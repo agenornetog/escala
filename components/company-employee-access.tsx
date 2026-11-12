@@ -39,8 +39,8 @@ function useCompanyAccess(organization: string, employee?: string) {
   return { data, error, reload: () => setRefresh(value => value + 1) };
 }
 
-export function CompanyEmployeeAccess({ organization, employee, revision, pending, close }: {
-  organization: string; employee: Employee; revision: number; pending: boolean; close: () => void;
+export function CompanyEmployeeAccess({ organization, employee, pending, close }: {
+  organization: string; employee: Employee; pending: boolean; close: () => void;
 }) {
   const { data, error, reload } = useCompanyAccess(organization, employee.id);
   const account = data?.accounts.find(item => item.employee_id === employee.id);
@@ -88,9 +88,6 @@ export function CompanyEmployeeAccess({ organization, employee, revision, pendin
           { action: 'link', employee: employee.id, email: account.email, allowSwaps: account.allow_swaps, resend: true },
           () => 'Convite reenviado.',
         )}>Reenviar convite</button>
-        <button className="btn secondary" disabled={busy || pending} onClick={() => void action(
-          { action: 'publish', employee: employee.id, revision }, () => 'Escala individual publicada.',
-        )}>Publicar escala individual</button>
       </div>}
     </> : !error && <p role="status">Carregando acesso…</p>}
   </Modal>;
@@ -140,7 +137,7 @@ export function CompanySwapRequests({ organization, employees, revision, pending
         <label>Cobertura<select name="replacement" defaultValue=""><option value="">Selecione um colaborador</option>{employees.filter(employee => employee.id !== request.shift.employeeId).map(employee =>
           <option key={employee.id} value={employee.id}>{employee.name}</option>)}</select></label>
         <label>Motivo da decisão<input name="decision" maxLength={500} placeholder="Obrigatório na recusa" /></label>
-        <p className="full form-note">A aprovação publica a escala atualizada dos envolvidos que têm acesso.</p>
+        <p className="full form-note">A aprovação atualiza a escala dos envolvidos.</p>
         <div className="form-footer full">
           <button className="btn secondary" value="reject" disabled={pending || busy}>Recusar</button>
           <button className="btn primary" value="approve" disabled={pending || busy}>Aprovar cobertura</button>

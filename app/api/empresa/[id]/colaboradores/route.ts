@@ -1,7 +1,6 @@
 import { cookies } from 'next/headers';
 import { sameOrigin } from '@/lib/auth';
 import { employeeRpc, employeeSwapHistory } from '@/lib/company-employee';
-import { scheduleFromStore } from '@/lib/employee-schedule';
 import { coveragePlan, type EmployeeSwap } from '@/lib/employee-swaps';
 import { MANAGER_COOKIE, managerBackend, verifiedManagerId, UUID } from '@/lib/manager-auth';
 import { parsePlanning } from '@/lib/planning-validation';
@@ -106,15 +105,6 @@ export async function POST(request: Request, context: Context) {
     }
 
     if (input.revision !== revision) return fail('O planejamento mudou. Atualize o painel antes de continuar.', 409);
-    if (input.action === 'publish') {
-      const employee = store.employees.find(item => item.id === input.employee);
-      if (!employee) return fail('Colaborador não encontrado.', 404);
-      const response = await employeeRpc('escala_employee_publish', {
-        ...scope, p_revision: revision, p_schedules: { [employee.id]: scheduleFromStore(store, employee.id) },
-      });
-      return response.ok ? json({ ok: true }) : rpcError(response);
-    }
-
     if (input.action === 'decide' && typeof input.requestId === 'string' && UUID.test(input.requestId)) {
       const decision = typeof input.decision === 'string' ? input.decision.trim() : '';
       if (typeof input.approve !== 'boolean') return fail('Informe a decisão sobre a solicitação.', 400);
@@ -126,21 +116,19 @@ export async function POST(request: Request, context: Context) {
       const [swap]: EmployeeSwap[] = await response.json();
       if (!swap || swap.status !== 'pending') return fail('Esta solicitação já foi decidida ou não está disponível.', 409);
       let next: Store | null = null;
-      let schedules = {};
       if (approve) {
         try {
           next = parsePlanning(coveragePlan(store, swap.shift, input.replacement));
           const issues = validate(next.shifts, next.employees, next.rules, next.dayOffs, next);
           const errors = issues.filter(issue => issue.severity === 'error');
           if (errors.length) return fail(errors.slice(0, 4).map(issue => issue.message).join(' '), 422);
-          schedules = Object.fromEntries([swap.shift.employeeId, input.replacement].map(employee => [employee, scheduleFromStore(next!, employee)]));
         } catch (error) {
           return fail(error instanceof Error ? error.message : 'A cobertura é inválida.', 422);
         }
       }
       const result = await employeeRpc('escala_employee_swap_decide', {
         ...scope, p_request: swap.id, p_decision: decision || null, p_revision: revision,
-        p_store: next, p_schedules: schedules,
+        p_store: next, p_schedules: {},
       });
       if (!result.ok) return rpcError(result);
       return json({ revision: approve ? await result.json() : revision, store: next });
