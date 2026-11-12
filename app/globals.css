@@ -150,6 +150,16 @@ h2 { font-size: 21px; font-weight: 500; line-height: 1.5; letter-spacing: -.01em
 .select-wrap select { appearance: none; border: none; background: transparent; font-size: 12px; color: var(--ink); padding: 4px 0; }
 .border-btn { border: 1px solid var(--line); }
 .schedule-scroll { overflow: auto; }
+.schedule-scroll-by-date { max-height: min(68vh, 720px); }
+.schedule-orientation-controls { flex-wrap: wrap; }
+.schedule-by-date thead th { position: sticky; top: 0; z-index: 3; }
+.schedule-by-date .schedule-date-col { position: sticky; left: 0; width: 108px; z-index: 2; }
+.schedule-by-date thead .schedule-date-col { z-index: 4; }
+.schedule-by-date .schedule-person-heading { padding: 10px; text-align: left; }
+.schedule-person-heading .employee-info > div:last-child { min-width: 0; }
+.schedule-person-heading .employee-info strong, .schedule-person-heading .employee-info small { white-space: normal; overflow-wrap: anywhere; }
+.schedule-by-date tbody th { border-top: 0; }
+.schedule-by-date td:last-child { background: var(--paper); }
 .schedule-table { width: 100%; min-width: 1120px; border-spacing: 0; border-collapse: separate; table-layout: fixed; }
 .schedule-table th { height: 76px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper); font-weight: 400; position: relative; }
 .schedule-table th:not(:first-child), .schedule-table td:not(:first-child) { border-left: 1px solid #e8edf1; }

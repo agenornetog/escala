@@ -12,6 +12,14 @@ test('renders the schedule, filters teams and changes the week',async({page})=>{
  await page.getByRole('button',{name:'Hoje',exact:true}).click();
  await expect(page.locator('.shift').first()).toBeVisible();
  await page.getByRole('button',{name:'Mês',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Por data',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('thead th').first()).toHaveText('Data');
+ await expect(page.locator('tbody tr')).toHaveCount(monthDays(today().slice(0,7)).length);
+ await expect(page.locator('thead th').last()).toContainText('Cobertura');
+ await page.locator('.shift').first().click();
+ await expect(page.getByRole('dialog').getByLabel('Saída',{exact:true})).toBeVisible();
+ await page.keyboard.press('Escape');
+ await page.getByRole('button',{name:'Por colaborador',exact:true}).click();
  await expect(page.locator('thead th')).toHaveCount(monthDays(today().slice(0,7)).length+1);
  await page.getByRole('button',{name:'Próximo mês',exact:true}).click();
  await expect(page.locator('thead th').last()).toContainText(String(monthDays(addMonths(today().slice(0,7),1)).length));
