@@ -23,12 +23,29 @@ test('login supports password visibility, invalid credentials, session persisten
  await page.getByRole('button',{name:'Sair da conta'}).click();await expect(page).toHaveURL(/\/login$/);
  await page.goto('/');await expect(page).toHaveURL(/\/login$/);
 });
-test('login works on mobile and desktop without overflow',async({page})=>{
+test('login shows the white brand over the schedule on mobile and desktop',async({page},testInfo)=>{
  await page.goto('/login');
+ const brand=page.getByRole('link',{name:'escalô — início'});
+ const hero=page.locator('.login-hero');
+ const schedule=page.locator('.login-preview');
+ const form=page.locator('.login-card');
  for(const width of [360,390,768,1440]){
   await page.setViewportSize({width,height:1000});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await expect(brand).toBeVisible();
+  await expect(brand).toHaveCSS('color','rgb(255, 255, 255)');
+  await expect(schedule).toBeVisible();
+  const brandBox=(await brand.boundingBox())!;
+  const formBox=(await form.boundingBox())!;
+  const heroBox=(await hero.boundingBox())!;
+  const scheduleBox=(await schedule.boundingBox())!;
+  expect(scheduleBox.x).toBeGreaterThan(heroBox.x);
+  expect(scheduleBox.x+scheduleBox.width).toBeLessThan(heroBox.x+heroBox.width);
+  expect(scheduleBox.y).toBeGreaterThan(heroBox.y);
+  expect(scheduleBox.y+scheduleBox.height).toBeLessThan(heroBox.y+heroBox.height);
+  if(width>720) expect(heroBox.height).toBeGreaterThanOrEqual(1000);
+  expect(width>720?brandBox.x<formBox.x:brandBox.y<formBox.y).toBe(true);
   await expect(page.getByRole('button',{name:'Entrar na minha conta'})).toBeVisible();
-  if(width===390||width===1440)await page.screenshot({path:`/tmp/escala-login-${width}.png`,fullPage:true});
+  if(width===390||width===1440)await page.screenshot({path:testInfo.outputPath(`escala-login-${width}.png`),fullPage:true});
  }
 });

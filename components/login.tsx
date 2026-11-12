@@ -1,6 +1,13 @@
 'use client';
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, CalendarDays, Check, Eye, EyeOff, LoaderCircle, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CalendarDays, Eye, EyeOff, LoaderCircle, LockKeyhole, ShieldCheck } from 'lucide-react';
+
+const weekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const weeklyShifts = [
+  ['08:00–17:00', '08:00–17:00', '08:00–17:00', 'Folga', '08:00–17:00', '08:00–12:00', 'Folga'],
+  ['Folga', '10:00–19:00', '10:00–19:00', '10:00–19:00', '10:00–19:00', 'Folga', '09:00–13:00'],
+  ['09:00–18:00', '09:00–18:00', 'Folga', '09:00–18:00', '09:00–18:00', '09:00–13:00', 'Folga'],
+];
 export default function Login({ configured, demoAccess=false }: { configured: boolean; demoAccess?:boolean }) {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -17,16 +24,29 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
     } catch { setError('Não foi possível conectar. Confira sua conexão e tente novamente.'); setBusy(false); }
   }
   return <div className="login-shell">
-    <header className="login-header"><a className="brand" href="/login" aria-label="Escala — início"><span className="brand-mark" aria-hidden="true" />escala<span className="brand-dot">.</span></a><span className="login-header-note">Pessoas. Tempo. Equilíbrio.</span></header>
     <main className="login-main">
-      <section className="login-intro" aria-labelledby="login-intro-title">
-        <span className="eyebrow">Um bom dia começa com uma boa escala</span>
-        <h1 id="login-intro-title">Cada pessoa.<br />{' '}No tempo certo.</h1>
-        <p>Mais clareza para planejar. Mais tranquilidade para sua equipe. Seu próximo turno começa aqui.</p>
-        <div className="login-preview" aria-hidden="true"><div className="login-preview-title"><CalendarDays size={18} /><span>Uma semana em equilíbrio</span><span className="pill">Planejada</span></div><div className="login-mini-days">{['Seg', 'Ter', 'Qua', 'Qui', 'Sex'].map((day, i) => <div key={day}><span>{day}</span><div className={`login-mini-shift ${i === 3 ? 'mini-off' : ''}`}>{i === 3 ? 'Folga' : <><span>08:00</span><span>17:00</span></>}</div></div>)}</div><div className="login-preview-footer"><Check size={14} />Tempo para trabalhar. Tempo para descansar.</div></div>
-        <div className="login-trust"><span><ShieldCheck size={16} />Planejamento com cuidado</span><span><LockKeyhole size={16} />Acesso restrito</span></div>
-      </section>
-      <section className="login-card" aria-labelledby="login-title"><div className="login-lock"><LockKeyhole size={22} /></div><h2 id="login-title">Bom ter você por aqui.</h2><p>Entre para planejar a equipe ou consultar sua jornada.</p>
+      <div className="login-hero">
+        <div className="login-preview" aria-hidden="true">
+          <div className="login-preview-title"><CalendarDays size={22} />Escala semanal</div>
+          <div className="login-mini-days">
+            {weekdays.map((day, column) => (
+              <div className="login-mini-day" key={day}>
+                <span>{day}</span>
+                {weeklyShifts.map((week, row) => (
+                  <div className={week[column] === 'Folga' ? 'login-mini-shift mini-off' : 'login-mini-shift'} key={row}>
+                    {week[column]}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <a className="brand login-brand" href="/login" aria-label="escalô — início">
+          <span className="brand-mark" aria-hidden="true" />escalô
+        </a>
+      </div>
+      <div className="login-content">
+      <section className="login-card" aria-labelledby="login-title"><div className="login-lock"><LockKeyhole size={22} /></div><h1 id="login-title">Bom ter você por aqui.</h1><p>Entre para planejar a equipe ou consultar sua jornada.</p>
         {!configured && <div className="login-unavailable" role="status">O acesso desta instalação ainda não foi configurado. O administrador precisa concluir a liberação do login.</div>}
         <form onSubmit={submit} className="login-form">
           <label htmlFor="login-email">E-mail<input id="login-email" type="email" name="email" placeholder="voce@empresa.com.br" autoComplete="username" required maxLength={254} disabled={busy} /></label>
@@ -35,6 +55,8 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
           <button className="btn primary login-submit" disabled={busy}>{busy ? <><LoaderCircle size={17} className="spin" />Entrando…</> : <>Entrar na minha conta<ArrowRight size={17} /></>}</button>
         </form>{demoAccess&&<p className="login-help"><a href="/">Continuar na demonstração</a></p>}<p className="login-help">Precisa de acesso ou esqueceu sua senha?<br />Fale com o administrador da sua operação.</p><div className="login-card-footer"><ShieldCheck size={15} />Uma sessão segura para planejar melhor.</div>
       </section>
-    </main><footer className="login-footer"><span>Feito para pessoas. Pensado para sua operação.</span><span>Escala · Gestão de equipes</span></footer>
+      <footer className="login-footer"><span>Feito para pessoas. Pensado para sua operação.</span><span>Escala · Gestão de equipes</span></footer>
+      </div>
+    </main>
   </div>;
 }
