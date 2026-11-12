@@ -1,4 +1,5 @@
 import { normalizeLabor, normalizeAbsences } from '@/lib/labor-rules';
+import { validWeeklyTargetMinutes } from '@/lib/employee-schedule';
 import { normalizeHoliday, normalizeLocation } from '@/lib/holidays';
 import { normalizeWorkSchedule } from '@/lib/work-schedule';
 import { ruleLimitKeys, ruleRanges, validRuleValue } from '@/lib/rule-profile';
@@ -13,6 +14,7 @@ export function validatePlanningFields(data: any) {
   if(ruleLimitKeys.some(key=>!validRuleValue(key,rules[key])))throw new Error('invalid');
   if(rules.agreementReference!==undefined&&(typeof rules.agreementReference!=='string'||rules.agreementReference.length>500))throw new Error('invalid');
   for(const employee of employees){
+    if(employee.weeklyTargetMinutes!==undefined&&!validWeeklyTargetMinutes(employee.weeklyTargetMinutes))throw new Error('invalid');
     if(employee.laborInstrumentId!==undefined&&(typeof employee.laborInstrumentId!=='string'||employee.laborInstrumentId.length>120))throw new Error('invalid');
     if(employee.laborCategory!==undefined&&(typeof employee.laborCategory!=='string'||employee.laborCategory.length>150))throw new Error('invalid');
     if(employee.sundayReference!==undefined&&(typeof employee.sundayReference!=='string'||employee.sundayReference.length>500))throw new Error('invalid');

@@ -22,7 +22,7 @@ test('saved shifts appear without publication and employee swap decisions are at
   const employee = '00000000-0000-4000-8000-000000000003';
   const outsider = '00000000-0000-4000-8000-000000000004';
   const shift = { id: 'turno', employeeId: 'pessoa', date: '2099-01-02', start: '08:00', end: '16:00', breakMinutes: 60 };
-  const roster = ['pessoa', 'cobertura'].map(id => ({ id, name: id, team: 'Suporte', regime: '5x2', role: 'Suporte' }));
+  const roster = ['pessoa', 'cobertura'].map(id => ({ id, name: id, team: 'Suporte', regime: '5x2', role: 'Suporte', weeklyTargetMinutes: id === 'pessoa' ? 2160 : 2640 }));
   const otherShift = { ...shift, id: 'outro-turno', employeeId: 'cobertura', date: '2099-01-03' };
   const store = { version: 1, employees: roster, rules: {}, shifts: [shift, otherShift], swaps: [] };
   try {
@@ -34,6 +34,7 @@ test('saved shifts appear without publication and employee swap decisions are at
       '20261111140000_escala_membership_status.sql',
       '20261112160000_escala_employee_accounts.sql',
       '20261112190000_escala_live_employee_schedule.sql',
+      '20261112200000_escala_employee_weekly_target.sql',
     ]) {
       await db.exec(await readFile('supabase/migrations/' + file, 'utf8'));
     }
@@ -50,6 +51,9 @@ test('saved shifts appear without publication and employee swap decisions are at
       "select public.escala_employee_account_read($1) #> '{0,schedule,shifts}' as shifts", [employee],
     )).rows[0].shifts;
     assert.deepEqual(await visibleShifts(), [shift]);
+    assert.deepEqual((await db.query(
+      "select public.escala_employee_account_read($1) #> '{0,schedule,employee,weeklyTargetMinutes}' as target", [employee],
+    )).rows, [{ target: 2160 }]);
     const submit = (actor: string) => db.query<{ id: string }>(
       'select public.escala_employee_swap_submit($1,$2,$3,$4) as id', [organization, actor, shift.id, 'Preciso de cobertura'],
     );
