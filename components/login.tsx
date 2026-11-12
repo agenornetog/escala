@@ -53,9 +53,8 @@ export default function Login({ configured, demoAccess=false }: { configured: bo
           <label htmlFor="login-password">Senha<div className="password-input"><input id="login-password" type={visible ? 'text' : 'password'} name="password" placeholder="Sua senha" autoComplete="current-password" required maxLength={256} disabled={busy} /><button type="button" className="icon-btn" aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
           {error && <div className="form-errors" role="alert">{error}</div>}
           <button className="btn primary login-submit" disabled={busy}>{busy ? <><LoaderCircle size={17} className="spin" />Entrando…</> : <>Entrar na minha conta<ArrowRight size={17} /></>}</button>
-        </form>{demoAccess&&<p className="login-help"><a href="/">Continuar na demonstração</a></p>}<p className="login-help">Precisa de acesso ou esqueceu sua senha?<br />Fale com o administrador da sua operação.</p><div className="login-card-footer"><ShieldCheck size={15} />Uma sessão segura para planejar melhor.</div>
+        </form>{demoAccess&&<p className="login-help"><a href="/">Continuar na demonstração</a></p>}<div className="login-card-footer"><ShieldCheck size={15} />Uma sessão segura para planejar melhor.</div>
       </section>
-      <footer className="login-footer"><span>Feito para pessoas. Pensado para sua operação.</span><span>Escala · Gestão de equipes</span></footer>
       </div>
     </main>
   </div>;
