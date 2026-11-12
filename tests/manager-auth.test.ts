@@ -73,3 +73,34 @@ test('company accounts with a single membership open the schedule directly', asy
   assert.equal(managerDestination({ companies, platformAdmin: true }), '/gestao');
   assert.equal(managerDestination({ companies: [...companies, { ...companies[0], id: 'other' }] }), '/gestao');
 });
+
+test('a linked Supabase employee signs in to the employee portal without acquiring management access', async t => {
+  const { authenticateManager } = await import('../lib/manager-auth');
+  const { companyEmployeeSession } = await import('../lib/company-employee');
+  const actor = '00000000-0000-4000-8000-000000000001';
+  const organization = '00000000-0000-4000-8000-000000000002';
+  for (const [name, value] of Object.entries({
+    SUPABASE_URL: 'https://test.supabase.co',
+    SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
+    SUPABASE_SECRET_KEY: 'sb_secret_test',
+  })) {
+    const before = process.env[name];
+    process.env[name] = value;
+    t.after(() => { if (before === undefined) delete process.env[name]; else process.env[name] = before; });
+  }
+
+  t.mock.method(globalThis, 'fetch', async (input: string, options: RequestInit) => {
+    const { pathname } = new URL(input);
+    if (pathname === '/auth/v1/token') return Response.json({ access_token: 'employee-token', expires_in: 3600 });
+    if (pathname === '/auth/v1/user') return Response.json({ id: actor });
+    if (pathname === '/rest/v1/escala_platform_admins' || pathname === '/rest/v1/escala_memberships') return Response.json([]);
+    assert.equal(pathname, '/rest/v1/rpc/escala_employee_account_read');
+    assert.deepEqual(JSON.parse(String(options.body)), { p_user: actor });
+    return Response.json([{ organization_id: organization, employee_id: 'pessoa', company: { name: 'Empresa' } }]);
+  });
+  assert.equal(await managerSession('employee-token'), null);
+  assert.deepEqual(await authenticateManager('pessoa@example.test', 'password',
+    async token => Boolean(await companyEmployeeSession(token))), {
+    token: 'employee-token', maxAge: 3600, redirectTo: '/colaborador',
+  });
+});

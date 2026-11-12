@@ -5,7 +5,7 @@ import { isEmployeeToken } from '@/lib/employee-session';
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const token=request.cookies.get(SESSION_COOKIE)?.value;
-  if(path==='/colaborador'||path==='/api/employee/me'||path.startsWith('/fonts/'))return NextResponse.next();
+  if(path==='/colaborador'||path==='/ativar-acesso'||path==='/api/auth/activate'||path.startsWith('/api/employee/')||path.startsWith('/fonts/'))return NextResponse.next();
   if (path === '/login' || path === '/gestao' || path.startsWith('/empresa/') || path.startsWith('/api/empresa/') || path.startsWith('/api/planning/') || path === '/api/platform/companies' || path === '/api/auth/login' || path === '/api/auth/logout') return NextResponse.next();
   if(isEmployeeToken(token)){
     if(path.startsWith('/api/'))return NextResponse.json({error:'O acesso do colaborador permite apenas consultar a própria jornada.'},{status:403,headers:{'Cache-Control':'no-store'}});

@@ -54,8 +54,8 @@ export function verifySession(token: string | undefined, now = Date.now()) {
     return data.v === 1 && data.sub === subject(config.email, config.hash) && Number.isInteger(data.iat) && data.iat <= current && data.exp === data.iat + SESSION_SECONDS && data.exp > current;
   } catch { return false; }
 }
-export function cookieFromRequest(request: Request) {
-  return request.headers.get('cookie')?.split(';').map(s => s.trim()).find(s => s.startsWith(SESSION_COOKIE + '='))?.slice(SESSION_COOKIE.length + 1);
+export function cookieFromRequest(request: Request, name = SESSION_COOKIE) {
+  return request.headers.get('cookie')?.split(';').map(s => s.trim()).find(s => s.startsWith(name + '='))?.slice(name.length + 1);
 }
 export function authenticated(request: Request) { return verifySession(cookieFromRequest(request)); }
 function requestAuthority(request: Request) {

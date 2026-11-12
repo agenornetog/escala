@@ -213,6 +213,14 @@ Nesta versão o gerador atende workspaces com até 100 colaboradores e 10.000 tu
 
 `tests/schedule-generator.test.ts` cobre perfis gerais e individuais, intervalos, folgas, domingos, histórico anterior/posterior, preservação, dias de operação, feriados, cobertura parcial, anos bissextos, IDs e conclusão idempotente. `tests/browser/generator.spec.ts` verifica prévia sem alteração de dados, uso dos limites individuais, aceite de cobertura parcial, invalidação após edição, descarte, rejeição pelo servidor, persistência e layout móvel.
 
+## Acesso e trocas de turno no painel da empresa
+
+Em **Colaboradores → Novo colaborador**, informe o e-mail de acesso para vincular a conta existente ou enviar um convite do Supabase Auth. Use **Acesso** no cartão para publicar a escala individual, reenviar o convite ou habilitar solicitações de troca. A pessoa entra pelo login oficial e consulta a própria escala publicada.
+
+O colaborador escolhe um turno publicado e informa o motivo. Em **Trocas de turno → Pedidos dos colaboradores**, o gestor indica a cobertura ou recusa com um motivo. O sistema valida a cobertura antes de atualizar o planejamento e publicar as escalas dos envolvidos.
+
+Para ativar em produção, aplique a migração `20261112160000_escala_employee_accounts.sql` antes de publicar o aplicativo. No Supabase Auth, permita o redirecionamento para `https://escala-bice.vercel.app/ativar-acesso` e configure um [serviço SMTP para enviar os convites](https://supabase.com/docs/guides/auth/auth-smtp).
+
 ## Horário habitual por colaborador
 
 Em **Colaboradores → Editar jornada → Horário habitual de trabalho**, marque **Usar horário de trabalho individual**. Esse cadastro é independente da opção de limites individuais: é possível manter os limites da empresa e definir uma entrada própria.

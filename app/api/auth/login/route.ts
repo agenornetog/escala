@@ -4,6 +4,7 @@ import { authenticateEmployee, employeeAccessConfigured, EmployeeStorageError } 
 import { createEmployeeSession } from '@/lib/employee-session';
 import { authenticateManager, managerAuthConfigured, MANAGER_COOKIE, ManagerAuthUnavailable } from '@/lib/manager-auth';
 import { allowLogin } from '@/lib/login-limit';
+import { companyEmployeeSession } from '@/lib/company-employee';
 export const runtime = 'nodejs';
 const headers = { 'Cache-Control': 'no-store' };
 export async function POST(request: Request) {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     if (typeof email !== 'string' || typeof password !== 'string' || email.length > 254 || !password || password.length > 256) throw new Error('Invalid');
     if (!allowLogin(email.trim().toLowerCase())) return NextResponse.json({error:'Muitas tentativas de acesso. Tente novamente em 15 minutos.'},{status:429,headers:{...headers,'Retry-After':'900'}});
     const admin=await verifyCredentials(email,password);
-    const manager = admin ? null : await authenticateManager(email, password);
+    const manager = admin ? null : await authenticateManager(email, password, async token => Boolean(await companyEmployeeSession(token)));
     if (manager) {
       const response = NextResponse.json({ ok: true, redirectTo: manager.redirectTo }, { headers });
       const options = sessionCookieOptions(request);

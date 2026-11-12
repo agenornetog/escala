@@ -103,7 +103,7 @@ export function managerDestination(session: { companies: Company[]; platformAdmi
     : '/gestao';
 }
 
-export async function authenticateManager(email: string, password: string) {
+export async function authenticateManager(email: string, password: string, employeeAccess?: (token: string) => Promise<boolean>) {
   const config = configuration();
   if (!config || !managerAuthConfigured()) return null;
   const response = await supabaseRequest(fetch, config.url + '/auth/v1/token?grant_type=password', {
@@ -115,5 +115,18 @@ export async function authenticateManager(email: string, password: string) {
   const { access_token, expires_in } = await response.json();
   if (typeof access_token !== 'string' || !Number.isSafeInteger(expires_in) || expires_in < 1) return null;
   const session = await managerSession(access_token);
-  return session ? { token: access_token, maxAge: expires_in, redirectTo: managerDestination(session) } : null;
+  if (session) return { token: access_token, maxAge: expires_in, redirectTo: managerDestination(session) };
+  return await employeeAccess?.(access_token)
+    ? { token: access_token, maxAge: expires_in, redirectTo: '/colaborador' }
+    : null;
+}
+
+export async function setInvitedUserPassword(token: string, password: string) {
+  const config = configuration();
+  if (!config) throw new ManagerAuthUnavailable();
+  return supabaseRequest(fetch, config.url + '/auth/v1/user', {
+    method: 'PUT',
+    headers: { apikey: config.key, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  }, true);
 }
