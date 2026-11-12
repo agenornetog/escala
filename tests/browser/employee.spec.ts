@@ -50,6 +50,15 @@ test('publication updates own folgas, blank password preserves login, password r
  try{
   await login(employee,'ana-update@example.test',password);await expect(employee.getByRole('heading',{name:'Minha jornada.'})).toBeVisible();await employee.getByRole('button',{name:'Próximo mês',exact:true}).click();
   await expect(employee.locator('.employee-day.off')).toHaveCount(1);await expect(employee.locator('.employee-day.working')).toHaveCount(1);await expect(employee.locator('.employee-day.working')).toContainText('08:00-17:00');
+  await employee.getByRole('button',{name:'Agenda',exact:true}).click();
+  const calendar=employee.getByRole('region',{name:'Agenda mensal da minha jornada'});
+  await expect(calendar.locator('li.working')).toContainText('08:00–17:00');
+  await expect(calendar.locator('li.off')).toContainText('Folga');
+  await employee.setViewportSize({width:390,height:900});
+  await expect.poll(()=>employee.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await employee.getByRole('button',{name:'Lista',exact:true}).click();
+  await expect(employee.locator('.employee-day.working')).toHaveCount(1);
+  await employee.setViewportSize({width:1280,height:900});
   await page.getByRole('button',{name:'Salvar acesso e publicar jornada'}).click();await expect(page.getByRole('status')).toContainText('jornada publicada');expect((await employee.request.get(base+'/api/employee/me')).status()).toBe(200);
   await page.locator('input[name=password]').fill('changed-browser-password-2026');await page.getByRole('button',{name:'Salvar acesso e publicar jornada'}).click();await expect(page.getByRole('status')).toContainText('jornada publicada');expect((await employee.request.get(base+'/api/employee/me')).status()).toBe(401);
   await employee.getByRole('button',{name:'Sair da conta',exact:true}).click();await expect(employee).toHaveURL(base+'/login');await employee.getByLabel('E-mail',{exact:true}).fill('ana-update@example.test');await employee.getByLabel('Senha',{exact:true}).fill(password);await employee.getByRole('button',{name:'Entrar na minha conta'}).click();await expect(employee.locator('.form-errors[role=alert]')).toContainText('incorretos');

@@ -579,6 +579,24 @@ form:not(:has(.individual-toggle input:checked)) .individual-fields { display: n
 .employee-day.working .pill{background:#eaf0ff;color:#164ecc}.employee-day.off .pill{background:#e7f4e9;color:#28734c}.employee-day.conflict .pill{background:#fff1e5;color:#9c541c}
 .employee-day.current-day{border-left:3px solid #165dfb;padding-left:12px}
 .employee-holiday{display:flex;align-items:center;gap:6px;color:#7c7671;overflow-wrap:anywhere}
+.employee-calendar { padding-top: 18px; }
+.employee-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.employee-calendar > div { color: var(--fog); text-align: center; font-size: 12px; padding-bottom: 8px; }
+.employee-calendar ol { list-style: none; margin: 0; padding: 0; }
+.employee-calendar li { display: flex; flex-direction: column; gap: 3px; min-height: 84px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); font-size: 12px; overflow-wrap: anywhere; }
+.employee-calendar time { font-weight: 700; }
+.employee-calendar li.working { background: #eaf0ff; color: #164ecc; border-color: #b8cbfb; }
+.employee-calendar li.off { background: #e7f4e9; color: #28734c; }
+.employee-calendar li.absent, .employee-calendar li.conflict { background: #fff1e5; color: #824416; }
+.employee-calendar li[aria-current="date"] { box-shadow: inset 0 0 0 1px #165dfb; }
+.employee-calendar small { font-size: .9em; }
+.employee-calendar-holiday { color: var(--fog); }
+@media (max-width: 600px) {
+  .employee-calendar-grid { gap: 3px; }
+  .employee-calendar li { padding: 4px 2px; min-height: 68px; font-size: 10px; text-align: center; }
+  .employee-calendar > div { font-size: 10px; }
+  .employee-calendar-unplanned { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+}
 @media(max-width:600px){.employee-header{padding:16px;gap:10px}.employee-header>.pill{font-size:10px}.employee-header .btn{padding:10px}.employee-portal{padding:24px 16px}.employee-day{grid-template-columns:100px minmax(0,1fr);gap:12px}.employee-day-date span{font-size:11px}.employee-totals{gap:12px}.employee-totals span{font-size:11px}.employee-month-actions .btn{font-size:12px;padding:10px}.person-bottom{flex-wrap:wrap;gap:10px}}
 
 /* Monthly generation preview. */
