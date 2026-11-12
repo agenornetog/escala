@@ -76,7 +76,7 @@ small { font-size: 12px; }
 .sidebar-indicator { width: 4px; height: 4px; border-radius: 50%; background: var(--charcoal); margin-left: auto; }
 .sidebar-account { display: flex; align-items: center; gap: 6px; padding: 20px 0; border-top: 1px solid var(--line); margin-top: 16px; }
 .sidebar-profile { display: flex; align-items: center; gap: 9px; text-align: left; flex: 1; min-width: 0; }
-.sidebar-profile .sidebar-label strong { font-size: 11px; }
+.sidebar-profile .sidebar-label strong { font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-logout { margin-left: auto; }
 .sidebar-collapsed .sidebar-brand-row { flex-direction: column; justify-content: center; gap: 18px; min-height: 112px; }
 .sidebar-collapsed .sidebar-brand-name, .sidebar-collapsed .sidebar-label, .sidebar-collapsed .sidebar-workspace-arrow, .sidebar-collapsed .sidebar-caption { display: none; }

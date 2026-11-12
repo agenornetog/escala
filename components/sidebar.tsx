@@ -22,6 +22,7 @@ type Props = {
   companyName?: string;
   canManageUsers?: boolean;
   openAccess?: boolean;
+  employee?: { name: string; allowSwaps: boolean };
   collapsed: boolean;
   mobileOpen: boolean;
   pendingCount: number;
@@ -30,18 +31,23 @@ type Props = {
   onToggle: () => void;
   onMobileOpen: () => void;
   onMobileClose: () => void;
-  onHelp: () => void;
-  onNotifications: () => void;
+  onHelp?: () => void;
+  onNotifications?: () => void;
   onLogout: () => void;
 };
 
 export default function Sidebar({
-  page, companyName, canManageUsers=false, openAccess=false, collapsed, mobileOpen, pendingCount, notificationCount,
+  page, companyName, canManageUsers=false, openAccess=false, employee, collapsed, mobileOpen, pendingCount, notificationCount,
   onNavigate, onToggle, onMobileOpen, onMobileClose, onHelp,
   onNotifications, onLogout,
 }: Props) {
-  const workspaceName = companyName ?? 'TCM Operações';
-  const items = canManageUsers ? [...navigation, { name: 'Usuários', icon: Users }] : navigation;
+  const workspaceName = companyName ?? (employee ? 'Minha jornada' : 'TCM Operações');
+  const items = employee
+    ? navigation.filter(item => item.name === 'Escalas' || (employee.allowSwaps && item.name === 'Trocas de turno'))
+    : canManageUsers ? [...navigation, { name: 'Usuários', icon: Users }] : navigation;
+  const profileName = employee?.name ?? (openAccess ? 'Visitante' : 'Administrador');
+  const profileRole = employee ? 'Colaborador' : openAccess ? 'Acesso temporário' : 'Acesso local';
+  const profile = <><span className="avatar account-avatar">{employee ? employee.name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toLocaleUpperCase('pt-BR') : openAccess ? 'V' : 'AG'}</span><span className="sidebar-label"><strong>{profileName}</strong><small>{profileRole}</small></span></>;
   const panel = useRef<HTMLElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
 
@@ -82,14 +88,14 @@ export default function Sidebar({
   }, [mobileOpen, onMobileClose]);
 
   function navigate(name: string) { onNavigate(name); onMobileClose(); }
-  function help() { onMobileClose(); onHelp(); }
-  function notifications() { onMobileClose(); onNotifications(); }
+  function help() { onMobileClose(); onHelp?.(); }
+  function notifications() { onMobileClose(); onNotifications?.(); }
 
   return <>
     <header className="mobile-toolbar" inert={mobileOpen}>
       <button ref={opener} className="icon-btn" aria-label="Abrir menu" aria-expanded={mobileOpen} aria-controls="app-sidebar" onClick={onMobileOpen}><Menu size={22} /></button>
       <span className="mobile-page-title">{page}</span>
-      <button className="notification-btn icon-btn" aria-label="Abrir notificações" onClick={onNotifications}><Bell size={19} />{notificationCount > 0 && <i />}</button>
+      {onNotifications && <button className="notification-btn icon-btn" aria-label="Abrir notificações" onClick={onNotifications}><Bell size={19} />{notificationCount > 0 && <i />}</button>}
     </header>
     <aside ref={panel} id="app-sidebar" className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''}`} role={mobileOpen ? 'dialog' : undefined} aria-modal={mobileOpen ? true : undefined} aria-label="Menu de navegação">
       <div className="sidebar-brand-row">
@@ -97,15 +103,20 @@ export default function Sidebar({
         <button className="icon-btn sidebar-toggle" onClick={onToggle} aria-label={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} title={collapsed ? 'Expandir menu lateral' : 'Recolher menu lateral'} aria-expanded={!collapsed} aria-controls="main-navigation">{collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}</button>
         <button className="icon-btn sidebar-close" aria-label="Fechar menu" onClick={onMobileClose}><X size={21} /></button>
       </div>
-      <button className="sidebar-workspace" aria-label={companyName ? 'Empresas · ' + workspaceName : 'Sobre ' + workspaceName} title={workspaceName} onClick={companyName ? () => window.location.assign('/gestao') : help}><span className="workspace-avatar">{workspaceName.charAt(0).toLocaleUpperCase('pt-BR')}</span><span className="sidebar-label"><strong>{workspaceName}</strong><small>Seu espaço de planejamento</small></span><ChevronDown size={14} className="sidebar-workspace-arrow" /></button>
+      {employee
+        ? <div className="sidebar-workspace" title={workspaceName}><span className="workspace-avatar">{workspaceName.charAt(0).toLocaleUpperCase('pt-BR')}</span><span className="sidebar-label"><strong>{workspaceName}</strong><small>Portal do colaborador</small></span></div>
+        : <button className="sidebar-workspace" aria-label={companyName ? 'Empresas · ' + workspaceName : 'Sobre ' + workspaceName} title={workspaceName} onClick={companyName ? () => window.location.assign('/gestao') : help}><span className="workspace-avatar">{workspaceName.charAt(0).toLocaleUpperCase('pt-BR')}</span><span className="sidebar-label"><strong>{workspaceName}</strong><small>Seu espaço de planejamento</small></span><ChevronDown size={14} className="sidebar-workspace-arrow" /></button>}
       <span className="sidebar-caption">Workspace</span>
       <nav id="main-navigation" aria-label="Navegação principal">
         {items.map(item => <button key={item.name} className={`nav-link ${page === item.name ? 'active' : ''}`} aria-label={item.name} aria-current={page === item.name ? 'page' : undefined} title={collapsed ? item.name : undefined} onClick={() => navigate(item.name)}><item.icon size={19} /><span className="sidebar-label">{item.name}</span>{item.name === 'Trocas de turno' && pendingCount > 0 && <b className="nav-count">{pendingCount}</b>}</button>)}
       </nav>
       <div className="sidebar-footer">
-        <button className="sidebar-action" aria-label="Abrir notificações" title={collapsed ? 'Notificações' : undefined} onClick={notifications}><Bell size={18} /><span className="sidebar-label">Notificações</span>{notificationCount > 0 && <span className="sidebar-indicator" aria-hidden="true" />}</button>
-        <button className="sidebar-action" aria-label="Central de ajuda" title={collapsed ? 'Central de ajuda' : undefined} onClick={help}><CircleHelp size={18} /><span className="sidebar-label">Central de ajuda</span></button>
-        <div className="sidebar-account"><button className="sidebar-profile" aria-label="Sobre o ambiente" title={collapsed ? (openAccess?'Acesso temporário':'Administrador local') : undefined} onClick={help}><span className="avatar account-avatar">{openAccess?'V':'AG'}</span><span className="sidebar-label"><strong>{openAccess?'Visitante':'Administrador'}</strong><small>{openAccess?'Acesso temporário':'Acesso local'}</small></span></button>{!openAccess&&<button className="icon-btn sidebar-logout" aria-label="Sair da conta" title="Sair da conta" onClick={onLogout}><LogOut size={18} /></button>}</div>
+        {onNotifications && <button className="sidebar-action" aria-label="Abrir notificações" title={collapsed ? 'Notificações' : undefined} onClick={notifications}><Bell size={18} /><span className="sidebar-label">Notificações</span>{notificationCount > 0 && <span className="sidebar-indicator" aria-hidden="true" />}</button>}
+        {onHelp && <button className="sidebar-action" aria-label="Central de ajuda" title={collapsed ? 'Central de ajuda' : undefined} onClick={help}><CircleHelp size={18} /><span className="sidebar-label">Central de ajuda</span></button>}
+        <div className="sidebar-account">{onHelp
+          ? <button className="sidebar-profile" aria-label="Sobre o ambiente" title={collapsed ? (openAccess?'Acesso temporário':'Administrador local') : undefined} onClick={help}>{profile}</button>
+          : <div className="sidebar-profile" title={profileName}>{profile}</div>}
+          {!openAccess&&<button className="icon-btn sidebar-logout" aria-label="Sair da conta" title="Sair da conta" onClick={onLogout}><LogOut size={18} /></button>}</div>
       </div>
     </aside>
     {mobileOpen && <button className="menu-scrim" tabIndex={-1} aria-label="Fechar navegação" onClick={onMobileClose} />}
