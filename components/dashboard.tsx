@@ -214,8 +214,8 @@ export default function Dashboard({openAccessUntil,company,initialPage='Escalas'
   <Sidebar companyName={company?.name} canManageUsers={company?.canManageUsers} openAccess={openAccess} page={page} collapsed={sidebarCollapsed} mobileOpen={mobile} pendingCount={pending.length} notificationCount={pending.length+currentIssues.length} onNavigate={name=>{setPage(name);setErrors([]);}} onToggle={toggleSidebar} onMobileOpen={()=>setMobile(true)} onMobileClose={closeMobile} onHelp={()=>setModal('help')} onNotifications={()=>setModal('notifications')} onLogout={async()=>{if(hasPendingSave){setToast('Aguarde o salvamento antes de sair.');return;}try{const response=await fetch('/api/auth/logout',{method:'POST'});if(!response.ok)throw new Error();window.location.replace('/login');}catch{setToast('Não foi possível sair. Tente novamente.');}}}/>
   <div className="main-area" inert={mobile}>
   <main>
-  {company&&<div className="flex flex-wrap items-center gap-3">
-    <p className="muted" role="status">{saveError||(hasPendingSave?'Salvando alterações…':'Planejamento salvo')}</p>
+  {company&&(saveError||hasPendingSave)&&<div className="flex flex-wrap items-center gap-3">
+    <p className="muted" role="status">{saveError||'Salvando alterações…'}</p>
     {saveError&&<button className="btn secondary" onClick={()=>setSaveError('')}>Tentar novamente</button>}
   </div>}
   {page==='Usuários'&&company?.canManageUsers
