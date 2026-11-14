@@ -181,6 +181,8 @@ test('confirmed folgas persist and can be replaced by a validated shift',async({
 test('workspace holiday registry supports national, state and city entries, locality, editing and deletion',async({page})=>{
  await page.getByRole('button',{name:'Feriados',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Feriados da operação.'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Localidade do workspace'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Salvar localidade',exact:true})).toHaveCount(0);
  const add=async(name:string,scope:string)=>{
   await page.getByRole('button',{name:'Novo feriado',exact:true}).click();const dialog=page.getByRole('dialog',{name:'Novo feriado'});
   await dialog.getByLabel('Nome do feriado',{exact:true}).fill(name);await dialog.getByLabel('Data',{exact:true}).fill(today());await dialog.getByLabel('Abrangência',{exact:true}).selectOption(scope);
@@ -190,11 +192,11 @@ test('workspace holiday registry supports national, state and city entries, loca
  };
  await add('Feriado nacional de teste','nacional');await add('Feriado estadual de teste','estadual');await add('Feriado municipal de teste','municipal');
  await expect(page.locator('.holiday-table tbody tr')).toHaveCount(3);
- await page.getByLabel('UF da operação',{exact:true}).selectOption('RN');await page.getByLabel('Município da operação',{exact:true}).fill('Mossoró');await page.getByRole('button',{name:'Salvar localidade'}).click();
+ await page.getByRole('button',{name:'Organização',exact:true}).click();await page.getByRole('combobox',{name:'UF da empresa',exact:true}).selectOption('RN');await page.getByLabel('Município da empresa',{exact:true}).fill('Mossoró');await page.getByRole('button',{name:'Salvar empresa',exact:true}).click();
  await page.getByRole('button',{name:'Escalas',exact:true}).click();
  await expect(page.locator('.holiday-marker')).toHaveCount(1);await expect(page.locator('.holiday-marker')).toHaveAttribute('title',/Feriado nacional de teste; Feriado estadual de teste; Feriado municipal de teste/);
  await page.reload();await page.getByRole('button',{name:'Feriados',exact:true}).click();
- await expect(page.locator('.holiday-table tbody tr')).toHaveCount(3);await expect(page.getByLabel('Município da operação',{exact:true})).toHaveValue('Mossoró');
+ await expect(page.locator('.holiday-table tbody tr')).toHaveCount(3);await expect(page.locator('.holiday-applied')).toHaveCount(3);await page.getByRole('button',{name:'Organização',exact:true}).click();await expect(page.getByLabel('Município da empresa',{exact:true})).toHaveValue('Mossoró');await page.getByRole('button',{name:'Feriados',exact:true}).click();
  await page.getByRole('button',{name:'Editar feriado Feriado municipal de teste',exact:true}).click();
  const edit=page.getByRole('dialog',{name:'Editar feriado'});await edit.getByLabel('Nome do feriado',{exact:true}).fill('Feriado municipal ajustado');await edit.getByRole('button',{name:'Salvar alterações'}).click();await expect(edit).toHaveCount(0);
  await page.getByLabel('Filtrar abrangência').selectOption('municipal');await expect(page.locator('.holiday-table tbody tr')).toHaveCount(1);await expect(page.locator('.holiday-table')).toContainText('Feriado municipal ajustado');
