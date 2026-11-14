@@ -633,3 +633,34 @@ form:not(:has(.individual-toggle input:checked)) .individual-fields { display: n
 .labor-team-remove:hover { background: var(--line); }
 .labor-team-form { display: grid; gap: 14px; }
 .labor-team-form > .btn { justify-self: start; }
+
+.organization-tabs {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 6px;
+ margin-bottom: 24px;
+ padding-bottom: 12px;
+ border-bottom: 1px solid var(--border, #ddd9d2);
+}
+.organization-tabs [role="tab"] {
+ padding: 10px 14px;
+ border: 1px solid transparent;
+ border-radius: 8px;
+ background: transparent;
+ color: inherit;
+ font: inherit;
+ cursor: pointer;
+}
+.organization-tabs [aria-selected="true"] {
+ background: #e9edff;
+ color: #2949bb;
+ font-weight: 600;
+}
+.organization-tabs [role="tab"]:focus-visible {
+ outline: 2px solid #2949bb;
+ outline-offset: 2px;
+}
+@media (max-width: 720px) {
+ .organization-tabs { gap: 4px; }
+ .organization-tabs [role="tab"] { padding: 10px; font-size: 13px; }
+}

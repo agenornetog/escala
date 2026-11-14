@@ -88,7 +88,7 @@ test('mobile navigation works without page overflow',async({page})=>{
  await expect(drawer).toHaveCount(0);
  await expect(page.getByRole('button',{name:'Abrir menu'})).toBeFocused();
  await page.getByRole('button',{name:'Abrir menu'}).click();
- await page.getByRole('button',{name:'Regras e limites',exact:true}).click();
+ await page.getByRole('button',{name:'Organização',exact:true}).click();await page.getByRole('tab',{name:'Regras de jornada',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'Menu de navegação'})).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'Perfil de jornada'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import {
   ArrowLeftRight, Bell, CalendarDays, ChevronDown, CircleHelp,
   LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen,
-  ShieldCheck, Users, Flag, X,
+  Settings2, Users, Flag, X,
 } from 'lucide-react';
 
 const navigation = [
@@ -13,8 +13,7 @@ const navigation = [
   { name: 'Colaboradores', icon: Users },
   { name: 'Feriados', icon: Flag },
   { name: 'Trocas de turno', icon: ArrowLeftRight },
-  { name: 'Revisão trabalhista', icon: ShieldCheck },
-  { name: 'Regras e limites', icon: ShieldCheck },
+  { name: 'Organização', icon: Settings2 },
 ];
 
 type Props = {
