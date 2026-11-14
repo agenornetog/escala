@@ -564,7 +564,24 @@ form:not(:has(.individual-toggle input:checked)) .individual-fields { display: n
 .holiday-reference { max-width: 280px; overflow-wrap: anywhere; }
 .holiday-applicability { font-style: italic; }
 .holiday-actions { display: flex; gap: 6px; }
-.schedule-table th > .holiday-marker { display: flex; position: absolute; right: 5px; top: 7px; color: var(--charcoal); }
+.schedule-table th.holiday-date { background: #fff5db; }
+.schedule-table th > .holiday-marker, .holiday-applied {
+ display: inline-flex;
+ align-items: center;
+ justify-content: center;
+ gap: 4px;
+ margin-top: 4px;
+ padding: 2px 6px;
+ border-radius: 5px;
+ background: #ffebae;
+ color: #6b4913;
+ font-size: 10px;
+ font-weight: 500;
+ line-height: 1.4;
+ white-space: nowrap;
+}
+.schedule-table th.holiday-date > i { top: 7px; right: 7px; bottom: auto; left: auto; }
+.holiday-marker svg, .holiday-applied svg { flex-shrink: 0; }
 .form-grid textarea { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; font: inherit; resize: vertical; }
 @media(max-width:920px){ .holiday-location { grid-template-columns: 1fr; gap: 24px; } .holiday-filters .search-input { margin-left: 0; } }
 @media(max-width:720px){ .holiday-stats { gap: 10px; } .holiday-stats .stat-top { font-size: 11px; min-height: 32px; } .holiday-stats .stat-card { padding: 15px 12px; } .holiday-stats .stat-note { font-size: 9px; } .holiday-filters .search-input { width: 100%; } .holiday-location .form-grid { grid-template-columns: 1fr; } }

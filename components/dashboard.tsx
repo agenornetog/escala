@@ -169,11 +169,11 @@ export default function Dashboard({openAccessUntil,company,initialPage='Escalas'
  async function resolveSwap(id:string,approve:boolean){const swap=store!.swaps.find(s=>s.id===id)!;let next={...store!,swaps:store!.swaps.map(s=>s.id===id?{...s,status:approve?'approved' as const:'rejected' as const}:s)};if(approve){const a=store!.shifts.find(s=>s.id===swap.fromShiftId),b=store!.shifts.find(s=>s.id===swap.toShiftId);if(!a||!b){setErrors(['Um turno desta solicitação foi removido. Recuse a troca e crie uma nova solicitação.']);return;}next={...next,shifts:store!.shifts.map(s=>s.id===a.id?{...s,employeeId:b.employeeId}:s.id===b.id?{...s,employeeId:a.employeeId}:s)};await commit(next,'Troca aprovada e escala atualizada.');}else{setStore(next);setToast('Solicitação recusada.');}}
 
  function dateClass(date:string){
-  return [isWeekend(date)?'weekend':'',date===today()?'today-column':''].filter(Boolean).join(' ');
+  return [isWeekend(date)?'weekend':'',date===today()?'today-column':'',holidayDates.get(date)?.length?'holiday-date':''].filter(Boolean).join(' ');
  }
 
  function dateHeader(d:string){
-  return <><span>{weekNames[(weekday(d)+6)%7]}</span><b>{labelDate(d,{day:'2-digit'})}</b>{d===today()&&<i/>}{Boolean(holidayDates.get(d)?.length)&&<span className="holiday-marker" aria-label={`Feriado: ${holidayDates.get(d)!.map(h=>h.name).join('; ')}`} title={holidayDates.get(d)!.map(h=>h.name).join('; ')}><Flag size={11}/></span>}</>;
+  return <><span>{weekNames[(weekday(d)+6)%7]}</span><b>{labelDate(d,{day:'2-digit'})}</b>{d===today()&&<i/>}{Boolean(holidayDates.get(d)?.length)&&<span className="holiday-marker" aria-label={`Feriado: ${holidayDates.get(d)!.map(h=>h.name).join('; ')}`} title={holidayDates.get(d)!.map(h=>h.name).join('; ')}><Flag size={12} aria-hidden="true"/>Feriado</span>}</>;
  }
 
  function employeeHeader(employee:Employee){
