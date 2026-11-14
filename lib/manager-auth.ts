@@ -52,14 +52,29 @@ async function platformAccess(actor: string) {
   return (await response.json()).length > 0;
 }
 
-export async function verifiedManagerId(token: string | undefined, config = configuration(), fetcher = fetch) {
+export type AuthUser = { id: string; email?: string; user_metadata?: Record<string, unknown> };
+
+export async function verifiedAuthUser(token: string | undefined, config = configuration(), fetcher = fetch) {
   if (!config || !token || token.length > 3500) return null;
   const response = await supabaseRequest(fetcher, config.url + '/auth/v1/user', {
     headers: { apikey: config.key, Authorization: 'Bearer ' + token },
   });
   if (!response.ok) return null;
-  const { id } = await response.json();
-  return typeof id === 'string' && UUID.test(id) ? id as string : null;
+  const user = await response.json();
+  return typeof user.id === 'string' && UUID.test(user.id) ? user as AuthUser : null;
+}
+
+export async function verifiedManagerId(token: string | undefined, config = configuration(), fetcher = fetch) {
+  return (await verifiedAuthUser(token, config, fetcher))?.id ?? null;
+}
+
+export async function userAuthRequest(token: string, path: string, init: RequestInit = {}) {
+  const config = configuration();
+  if (!config) throw new ManagerAuthUnavailable();
+  return supabaseRequest(fetch, config.url + path, {
+    ...init,
+    headers: { apikey: config.key, Authorization: 'Bearer ' + token, ...init.headers },
+  }, true);
 }
 
 export async function platformActor(token: string | undefined) {

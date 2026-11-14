@@ -677,3 +677,26 @@ form:not(:has(.individual-toggle input:checked)) .individual-fields { display: n
  .organization-tabs { gap: 4px; }
  .organization-tabs [role="tab"] { padding: 10px; font-size: 13px; }
 }
+
+.account-avatar { overflow: hidden; flex-shrink: 0; }
+.account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sidebar-profile .sidebar-label { min-width: 0; }
+.sidebar-profile .sidebar-label strong, .sidebar-profile .sidebar-label small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-modal { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.account-photo-row { display: flex; align-items: center; gap: 18px; margin: 8px 0 24px; }
+.account-photo-preview .account-avatar { width: 76px; height: 76px; font-size: 24px; }
+.account-photo-row > div { min-width: 0; overflow-wrap: anywhere; }
+.account-photo-row .muted { margin-top: 4px; }
+.account-photo-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.account-photo-actions .btn { padding: 8px 12px; }
+.account-details .form-footer { margin-top: 0; }
+.account-security { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line); }
+.account-security h3 { margin-bottom: 18px; font-size: 18px; font-weight: 500; }
+.account-success { margin-top: 16px; color: #216540; font-size: 13px; }
+.management-account { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+.management-account .sidebar-profile { max-width: 260px; }
+@media (max-width: 720px) {
+ .account-modal { max-height: calc(100dvh - 24px); }
+ .account-photo-row { align-items: flex-start; gap: 12px; }
+ .account-photo-preview .account-avatar { width: 60px; height: 60px; font-size: 20px; }
+}

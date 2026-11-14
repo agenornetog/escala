@@ -63,7 +63,7 @@ export default function EmployeePortal({initial,initialMonth}:{initial:View;init
  async function logout(){setError('');try{const response=await fetch('/api/auth/logout',{method:'POST'});if(!response.ok)throw new Error();window.location.replace('/login');}catch{setError('Não foi possível sair. Tente novamente.');}}
  const days=monthDays(month),plans=loadedMonth===month?days.map(date=>({date,plan:dayPlan(data.employee.id,date,data.shifts,data.dayOffs,data.absences??[]),holidays:holidaysOnDate(data.holidays,date,data.workspaceLocation)})):[];
  return <div className={`app-shell ${collapsed?'sidebar-collapsed':''}`}>
-  <Sidebar page={page} companyName={data.companies?.find(company=>company.id===data.organization)?.name}
+  <Sidebar companyId={data.organization} page={page} companyName={data.companies?.find(company=>company.id===data.organization)?.name}
    employee={{name:data.employee.name,allowSwaps:showSwaps}} collapsed={collapsed} mobileOpen={mobile}
    pendingCount={data.swaps?.filter(request=>request.status==='pending').length??0} notificationCount={0}
    onNavigate={setSection} onToggle={toggleSidebar} onMobileOpen={()=>setMobile(true)} onMobileClose={closeMobile} onLogout={logout}/>

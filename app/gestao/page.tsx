@@ -1,3 +1,4 @@
+import AccountMenu from '@/components/account-menu';
 import { CompanyProvisioning } from './company-provisioning';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -19,6 +20,7 @@ export default async function ManagementPage() {
     if (!response.ok) throw new ManagerAuthUnavailable();
     const companies = await response.json();
     return <main className="mx-auto max-w-3xl p-6">
+      <div className="management-account"><AccountMenu /></div>
       <h1 className="text-2xl font-semibold">Administração do Escalô</h1>
       <p className="mt-2">Cadastre empresas e seus responsáveis.</p>
       <CompanyProvisioning companies={companies} />
@@ -28,7 +30,8 @@ export default async function ManagementPage() {
   const destination = managerDestination(session);
   if (destination !== '/gestao') redirect(destination);
   return <main className="mx-auto max-w-3xl p-6">
-    <h1 className="text-2xl font-semibold">Suas empresas</h1>
+    <div className="management-account"><AccountMenu /></div>
+      <h1 className="text-2xl font-semibold">Suas empresas</h1>
     <ul className="mt-4 space-y-2">
       {session.companies.map(company => <li key={company.id}>
         <a href={'/empresa/' + company.id}>{company.name}</a> <span>({company.role === 'admin' ? 'Administrador' : 'Gestor'})</span>

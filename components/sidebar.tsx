@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import AccountMenu from './account-menu';
 import {
   ArrowLeftRight, Bell, CalendarDays, ChevronDown, CircleHelp,
   LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen,
@@ -19,6 +20,7 @@ const navigation = [
 type Props = {
   page: string;
   companyName?: string;
+  companyId?: string;
   canManageUsers?: boolean;
   openAccess?: boolean;
   employee?: { name: string; allowSwaps: boolean };
@@ -36,7 +38,7 @@ type Props = {
 };
 
 export default function Sidebar({
-  page, companyName, canManageUsers=false, openAccess=false, employee, collapsed, mobileOpen, pendingCount, notificationCount,
+  page, companyName, companyId, canManageUsers=false, openAccess=false, employee, collapsed, mobileOpen, pendingCount, notificationCount,
   onNavigate, onToggle, onMobileOpen, onMobileClose, onHelp,
   onNotifications, onLogout,
 }: Props) {
@@ -44,9 +46,6 @@ export default function Sidebar({
   const items = employee
     ? navigation.filter(item => item.name === 'Escalas' || (employee.allowSwaps && item.name === 'Trocas de turno'))
     : canManageUsers ? [...navigation, { name: 'Usuários', icon: Users }] : navigation;
-  const profileName = employee?.name ?? (openAccess ? 'Visitante' : 'Administrador');
-  const profileRole = employee ? 'Colaborador' : openAccess ? 'Acesso temporário' : 'Acesso local';
-  const profile = <><span className="avatar account-avatar">{employee ? employee.name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toLocaleUpperCase('pt-BR') : openAccess ? 'V' : 'AG'}</span><span className="sidebar-label"><strong>{profileName}</strong><small>{profileRole}</small></span></>;
   const panel = useRef<HTMLElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
 
@@ -112,9 +111,7 @@ export default function Sidebar({
       <div className="sidebar-footer">
         {onNotifications && <button className="sidebar-action" aria-label="Abrir notificações" title={collapsed ? 'Notificações' : undefined} onClick={notifications}><Bell size={18} /><span className="sidebar-label">Notificações</span>{notificationCount > 0 && <span className="sidebar-indicator" aria-hidden="true" />}</button>}
         {onHelp && <button className="sidebar-action" aria-label="Central de ajuda" title={collapsed ? 'Central de ajuda' : undefined} onClick={help}><CircleHelp size={18} /><span className="sidebar-label">Central de ajuda</span></button>}
-        <div className="sidebar-account">{onHelp
-          ? <button className="sidebar-profile" aria-label="Sobre o ambiente" title={collapsed ? (openAccess?'Acesso temporário':'Administrador local') : undefined} onClick={help}>{profile}</button>
-          : <div className="sidebar-profile" title={profileName}>{profile}</div>}
+        <div className="sidebar-account"><AccountMenu organizationId={companyId} fallbackName={employee?.name} fallbackRole={employee?'Colaborador':'Usuário'} openAccess={openAccess} collapsed={collapsed} onOpen={onMobileClose}/>
           {!openAccess&&<button className="icon-btn sidebar-logout" aria-label="Sair da conta" title="Sair da conta" onClick={onLogout}><LogOut size={18} /></button>}</div>
       </div>
     </aside>
